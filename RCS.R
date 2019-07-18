@@ -1,0 +1,23 @@
+library(haven)
+library(Hmisc)
+library(rms)
+pain<-read_sav("C:/Users/Administrator/Desktop/pain.sav")
+options(digits=4)
+###建立结合了限制性立方样条的logistic模型
+model<-lrm(status~rcs(age,5)+gender,data=pain)
+model
+AIC(model)
+###查看age的min和max
+summary(pain$age)
+###,截点的位置
+rcspline.eval(pain$age, nk=5, inclx=FALSE)
+###log(OR)~X的曲线
+rcspline.plot(pain$age,pain$status,xrange=c(30,78),
+              model="logistic",nk=5,adj=pain$gender,
+              knots=c(37.95,49.72,56,61,72),
+              show="xbeta",showknots=TRUE,statloc=c(32,0.5))
+###概率曲线
+rcspline.plot(pain$age,pain$status,xrange=c(30,78),
+              model="logistic",nk=5,
+              knots=c(37.95,49.72,56,61,72),
+              show="prob",showknots=TRUE,statloc=c(30,0.45))
