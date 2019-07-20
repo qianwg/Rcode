@@ -1,0 +1,46 @@
+##基线表和单因素logistic回归三线表的制作
+library(haven)
+library(plyr)
+data<-read_sav("C:/Users/Administrator/Desktop/logistic.sav")
+View(data)
+data$X1<-factor(data$X1,levels=c(1,2,3),labels=c("胃底","胃体","胃窦"))
+###1.单个
+count<-table(data$X1)
+prop<-round(prop.table(count),2)
+count_prop<-paste(count,'(' ,prop ,')',sep="")
+variable_frame<-data.frame(character=c("X1",names(count)),
+                           freq=c(NA,count_prop))
+###2.创建函数,适用于分类资料,x是字符型，注意加引号
+char_table<-function(x){
+  x<-as.character(x)
+  count<-table(data[,x])
+  prop<-round(prop.table(count),4)*100
+  count_prop<-paste(count,'(' ,prop ,')',sep="")
+  variable_frame<-data.frame(character=c(x,names(count)),
+                             freq=c(NA,count_prop))
+  return(variable_frame)
+}
+char_table('X1')
+##3.进行多个操作
+mytable<-colnames(data)[c(1,3,7,10,11)]
+my_char<-lapply(mytable,char_table)
+my_char_dataframe<-ldply(my_char)
+##4.单因素的logsitic回归
+model<-glm(Y~X1,data=data,family=binomial(link="logit"))
+coef<-summary(model)$coef[,1]
+coef_names<-names(summary(model)$coef[,1])
+coef_p<-summary(model)$coef[,4]
+coef_low<-summary(model)$conf.int
+coef_dataframe<-data.frame(character=coef_names,p_value=coef_p)
+##2建立函数
+char_logis<-function(x){
+  formula<-as.formula(paste("Y~",x))
+  model<-glm(formula,data=data,family=binomial(link="logit"))
+  coef<-summary(model)$coef[,1]
+  coef_names<-names(summary(model)$coef[,1])
+  coef_p<-summary(model)$coef[,4]
+  coef_low<-summary(model)$conf.int
+  coef_dataframe<-data.frame(character=coef_names,
+                             coef=coef,p_value=coef_p,row.names=NULL)
+  return(coef_dataframe)
+}
