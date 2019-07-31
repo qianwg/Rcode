@@ -1,0 +1,12 @@
+library(rio)
+baseline<-import('C:/Users/dell/Desktop/baseline2019-7-31.xlsx')
+variables<-c("id","sex","age","race","marriag","educati","employm","occupat",
+             "income","bloodtp","insuran","height","weight","screening","cancerfh",
+             "selfage","fathage","catpfath","mothage","catpmoth","brot1age","catpbrot1",
+             "brot2age","catpbrot2","sist1age","catpsist1","sist2age","catpsist2","chil1age",
+             "catpchil1","chil2age","catpchil2","smoking","quitsmkyrs","cpd","smkyrs","passivesmk",
+             "psmkyrs","traffic","sleephrs","sleepquali","nightshift","sedentaryh","cellphoneh",
+             "stress","agemenarch","menopause","agemenopau","deliver","delivertim","agefirdeli",
+             "breastfeed","brstfedmth","abortion","induabort","sponabort","oralcontra","hrt")
+baseline[,variables]<-apply(baseline[,variables],2,as.numeric)
+export(baseline,'C:/Users/dell/Desktop/baseline2019-7-31(新).xlsx')
