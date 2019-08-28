@@ -22,9 +22,19 @@ par(new=TRUE)
 plot(survfit(model,newdata=newdat),col='red',lwd=2)
 title('Observed Versus Expected Plote by Rx')
 legend('topright',c('Expected','Observed'),col=c('black','red'),lwd=2)
-# the goodness of fit(拟合优度检验)
+#2. the goodness of fit(拟合优度检验)
 model2<-coxph(Surv(survt,status)~rx+logwbc+sex,data=leukemia)
 p1<-cox.zph(model2,transform = 'rank')
 plot(p1)
 # time-dependent variates in cox model
+ additive<-survSplit(leukemia,cut=leukemia$survt[leukemia$status==1],
+                     end='survt',event='status',start='start',id='id')
+#3. additive[which(additive$id==11),] 
+additive$logtwbc<-additive$logwbc*log(additive$survt)
+coxph(Surv(start,survt,status)~sex+logwbc+logtwbc+cluster(id),method='breslow',data=additive)
+##logtwbc的p值 is not signiicant,so it meet PH assumption
 
+# stratified cox model
+
+
+ 

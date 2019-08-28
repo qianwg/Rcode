@@ -35,7 +35,5 @@ coxph(Surv(start,survt,status)~sex+logwbc+logtwbc+cluster(id),method='breslow',d
 ##logtwbc的p值 is not signiicant,so it meet PH assumption
 
 # stratified cox model
-sdadadadadadasd
-dsfsdf
 
 
