@@ -34,6 +34,6 @@ additive$logtwbc<-additive$logwbc*log(additive$survt)
 coxph(Surv(start,survt,status)~sex+logwbc+logtwbc+cluster(id),method='breslow',data=additive)
 ##logtwbc的p值 is not signiicant,so it meet PH assumption
 
-# stratified cox model
+# stratified cox model(2019-8-29)
 
 
