@@ -68,4 +68,4 @@ screening2<-within(screening,{
   area[id>=32060001 & id<=32063000]<-"东二营镇"
   qu[id>=32010001 & id<=32063000]<-'蓟州区'
 })
-export(screening2,'C:/Users/dell/Desktop/PAD8月9日(街道赋值).xlsx')
+export(screening2,'C:/Users/dell/Desktop/街道赋值.xlsx')
