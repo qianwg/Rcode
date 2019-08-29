@@ -9,4 +9,4 @@ variables<-c("id","sex","age","race","marriag","educati","employm","occupat",
              "stress","agemenarch","menopause","agemenopau","deliver","delivertim","agefirdeli",
              "breastfeed","brstfedmth","abortion","induabort","sponabort","oralcontra","hrt")
 baseline[,variables]<-apply(baseline[,variables],2,as.numeric)
-export(baseline,'C:/Users/dell/Desktop/baseline2019-7-31(新).xlsx')
+export(baseline,'C:/Users/dell/Desktop/变量赋值.xlsx')
