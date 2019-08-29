@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1566216439021.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "511670163",
+    "id" : "86743721",
+    "lastKnownWriteTime" : 1567044715,
+    "last_content_update" : -2147483648,
+    "path" : "E:/shengchao9505/Rcode/area2.R",
+    "project_path" : "area2.R",
+    "properties" : {
+        "cursorPosition" : "22,41",
+        "scrollLine" : "14",
+        "tempName" : "Untitled3"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
