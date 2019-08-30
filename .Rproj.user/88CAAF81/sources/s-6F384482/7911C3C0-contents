@@ -1,8 +1,0 @@
-library(rio)
-library(tidyverse)
-screening<-import('C:/Users/dell/Desktop/高危人群项目推荐表2019-07-16.xlsx')
-str(screening)
-pad<-import('C:/Users/dell/Desktop/PAD.xlsx')
-str(pad)
-merger<-left_join(screening,pad,by=c('id','name'))
-export(merger,'C:/Users/dell/Desktop/得分比较.xlsx')
