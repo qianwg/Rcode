@@ -83,7 +83,7 @@ shinyServer(function(input, output) {
     #上传高危情况
     table.risk<-reactive({
        
-        biomark2()[,c('id','name','CEA.risk','AFP.risk','CA199.risk','CA153.risk','CA125.risk')]
+        biomark2()[,c('ID','name','CEA.risk','AFP.risk','CA199.risk','CA153.risk','CA125.risk')]
     })
     output$table.risk<-renderDT({
         datatable(table.risk(),class="cell-border stripe",caption = '表1：高危情况',width = 12,options=list(pageLength=10,autoWidth=TRUE),colnames=c('编号','姓名','CEA','AFP','CA199','CA153','CA125'))
