@@ -71,7 +71,7 @@ shinyServer(function(input, output) {
             
         })
         biomark2[,c('CEA.risk','AFP.risk','CA199.risk','CA153.risk','CA125.risk')]<-apply(biomark2[,c('CEA.risk','AFP.risk','CA199.risk','CA153.risk','CA125.risk')],2,risk)
-          biomark2
+          as.data.frame(biomark2)
         
 })
    
@@ -89,13 +89,7 @@ shinyServer(function(input, output) {
         datatable(table.risk(),class="cell-border stripe",caption = '表1：高危情况',width = 12,options=list(pageLength=10,autoWidth=TRUE),colnames=c('编号','姓名','CEA','AFP','CA199','CA153','CA125'))
     })
     #输出高危分布情况
-    
-    
-   
- 
-    #output$select.biomark<-renderTable({
-     #   table(biomark2()$CEA.risk)
-     #})
+
     output$select.biomark<-renderTable({
         table(biomark2()[,input$biomark])
     })
@@ -112,9 +106,23 @@ shinyServer(function(input, output) {
         ee1<-barplot(bb1,ylim=c(0,max(aa1[,2]+10)))
         text(ee1,aa1[,2]+10,labels=aa1[,2],pos=1,cex=1.5)
     })
+    
+    #提供高危人群下载项和非高危人群下载项
+    output$download<-downloadHandler(
+      filename = function(){
+        paste("人群高危情况表" ,Sys.Date(),".xlsx", sep = "")
+      },
+      content = function(file) {
+        data<-biomark2()
+        
+        rio::export(data,file)
+        
+      }
+    )
+    
 
     })
-   
+
     
     
     

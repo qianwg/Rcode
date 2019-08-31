@@ -6,7 +6,7 @@ shinyUI(dashboardPage(
         fileInput("file","选择上传文件"),
         menuItem("原始数据",tabName = "primary",icon=icon("adjust")),
         menuItem("高危情况", tabName = "dashboard", icon = icon("dashboard")),
-        menuItem("绘图", tabName = "someplots", icon = icon("images")),
+        
         numericInput(inputId = "id",
                      "ID",21010001,21010001,22063000),
         menuItem('搜素ID结果',tabName = 'searchID',icon=icon('search')),
@@ -18,8 +18,9 @@ shinyUI(dashboardPage(
                                 "CA153"="CA153.risk",
                                 "CA125"="CA125.risk")
                     ),
+    
         menuItem(text = "问卷质量评估", icon = icon("refresh"), href = "http://39.106.31.215:3838/check2019/"),
-        menuItem(text = "问卷高危评估", icon = icon("refresh"), href = "http://39.106.31.215:3838/risk2019/risk2019")
+        menuItem(text = "问卷高危评估", icon = icon("refresh"), href = "http://39.106.31.215:3838/risk2019/")
         
         
     )),
@@ -32,18 +33,27 @@ shinyUI(dashboardPage(
                 
                 fluidRow(box(div(style='overflow-x:scroll',DT::DTOutput("table.risk"),width = 12),width = 12
                 )),
-                fluidRow(box(tableOutput("select.biomark")),
-                         box(plotOutput('barplot'))
+                fluidRow(#box(tableOutput("select.biomark")),
+                         #box(downloadButton("download", "下载人群高危情况表"),width=4,status = "info",
+                        #     collapsible = T, collapsed = F),
+                  tabBox(
+                    side = "left", height = "500px",
+                    selected = "Tab1",
+                    tabPanel("标志物分布情况", tableOutput("select.biomark")),
+                    tabPanel("标志物分布图", plotOutput('barplot'))
+                  ),
+                  box(downloadButton("download", "下载人群高危情况表"),width=4,status = "info",
+                           collapsible = T, collapsed = F)
                         
                       
                         
                          )
-                #,
-            #    fluidRow(box(verbatimTextOutput("table2"),width = 8),
-            #             box(downloadButton("download1", "下载人群高危得分表"),width=4),
+               # ,
+              #  fluidRow(
+               #          box(
             #             box(downloadButton("download2", "下载高危人群项目推荐表"),width=4)
            #              1
-          #      ),
+                #)
          #       fluidRow(box(plotOutput('bar')))
          #       
         #),
