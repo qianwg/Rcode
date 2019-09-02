@@ -6,6 +6,21 @@ names(leukemia)<-tolower(names(leukemia))
 #leukemia$rx<-factor(leukemia$rx,levels = c(1,0),labels=c('placebo','treatment'))
 #leukemia$sex<-factor(leukemia$sex,levels = c(1,0),labels=c('female','male'))
 head(leukemia)
+#----------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------
+#K-M survival curves and log-rank test
+summary(survfit(Surv(survt,status)~rx,data=leukemia))#estimating survival rate
+summary(survfit(Surv(survt,status)~1,data=leukemia),times=6)#估计总体time2=6的survival eatimates,times is to specified survival times
+plot(survfit(Surv(survt,status)~rx,data=leukemia))#K-M survival curves
+survdiff(Surv(survt,status)~rx,data=leukemia)#log-rank test()
+#log-rank test for several groups
+vets<-import('~/project/Rcode/survival/vets.sav')
+vets$group<-ifelse(vets$PERF<=74,ifelse(vets$PERF<=59,1,2),3)
+plot(survfit(Surv(SURVT,STATUS)~group,data=vets))#KM curves for group
+survdiff(Surv(SURVT,STATUS)~group,data=vets)#the function survdiff is also useful for several groups(≥3)
+
+#-----------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------------------------
 #PH假定检验
 #1.图形法
 #1.1 PH假定方法1(log-log survival curves)
@@ -36,7 +51,10 @@ additive$logtwbc<-additive$logwbc*log(additive$survt)
 coxph(Surv(start,survt,status)~sex+logwbc+logtwbc+cluster(id),method='breslow',data=additive)
 ##logtwbc的p值 is not signiicant,so it meet PH assumption
 
-# stratified cox model(2019-9-01)
+
+#------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------
+# stratified cox model(2019-9-01)（可以针对不满足PH假定的变量）
 #the stratified cox model is a modification of cox ph model that allows for control by
 # stratification if a predictor that does not satify th PH assumption.
 #1.a single stratified cox model(stratified by sex,上述s结果sex不符合PH假定)=no-interaction model
@@ -60,11 +78,15 @@ model3.3<-coxph(Surv(survt,status)~logwbc+rx+sex:logwbc+sex:rx+strata(sex),data=
 #Lr=reduced(no-interaction) model;Lf=full(interaction) model
 #-2Ln(LR)=-2*ln()
 anova(model1.1,model3.3)
+LRT=-2*(model1.1$loglik[2]-model3.3$loglik[2]);LRT#等同于anova()
+pvalue<-1-pchisq(LRT,2);pvalue
 # the p value is not significant at the o.o5 level for 2 degrees of freedom
 # thus despite the numerical difference between corresponding coefficients in the female and male models.
 #there is no statistically significant difference.the no-interaction model is acceptable
 
-
+#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------
+  
 
 
 
