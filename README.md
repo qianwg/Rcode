@@ -1,1 +1,5 @@
-# Rcode and 设定肺开始吗弗兰克斯
+新增：
+(1)mysql服务器安装
+(2)screening to check
+(3)analysis of tumor marker
+
