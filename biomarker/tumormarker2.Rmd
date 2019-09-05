@@ -1,0 +1,386 @@
+---
+title: "肿瘤标志物在正常人群中的分布及其在癌症筛查中的应用价值研究"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+加载相关包
+```{r result='hide'}
+library(rio)
+library(tidyverse)
+library(RColorBrewer)
+```
+
+一、读取数据
+```{r}
+biomark<-import('~/肿瘤标志物相关研究/biomark+PAD20190628.xlsx')
+```
+二、查看数据的分布
+(1)肿瘤标志物的分布
+(1.1)CEA的分布
+查看异常值及去除异常值
+```{r}
+opar<-par(no.readonly = TRUE)
+par(mfrow=c(2,4))
+boxplot(biomark$CEA)
+title(xlab='CEA')
+boxplot(biomark$CA125)
+title(xlab='CA125')
+boxplot(biomark$AFP)
+title(xlab='AFP')
+boxplot(biomark$CA153)
+title(xlab='CA153')
+boxplot(biomark$CA199)
+title(xlab='CA199')
+boxplot(biomark$PG1)
+title(xlab='PG1')
+boxplot(biomark$PG2)
+title(xlab='PG2')
+par(opar)
+
+```
+
+发现CEA存在极值点776.3，及CA125存在极值点(大于150)，AFP大于200，CA199大于200，PG2存在极值点大于60，去除后重新画图
+
+```{r results='hide'}
+biomark$CEA[biomark$CEA==776.3]<-NA
+biomark$CA125[biomark$CA125>150]<-NA
+biomark$AFP[biomark$AFP>200 |biomark$AFP>40 ]<-NA
+biomark$CA199[biomark$CA199>200]<-NA
+biomark$PG2[biomark$PG2>60]<NA
+```
+查看总体分布
+```{r}
+par(mfrow=c(2,4))
+hist(biomark$CEA,main='',xlab='CEA',freq=FALSE,breaks = 20)
+hist(biomark$CA125,main='',xlab='CA125',freq=FALSE,breaks=20)
+hist(biomark$AFP,main='',xlab='AFP',freq=FALSE,breaks=20)
+hist(biomark$CA153,main='',xlab='CA153',freq=FALSE,breaks=20)
+hist(biomark$CA199,main='',xlab='CA199',freq=FALSE,breaks=20)
+hist(biomark$PG1,main='',xlab='PG1',freq=FALSE,breaks=20)
+hist(biomark$PG2,main='',xlab='PG2',freq=FALSE,breaks=20)
+par(opar)
+```
+
+(2)查看重要变量的分布
+2.1性别的分布
+```{r}
+names(biomark)
+#性别变量的处理
+biomark$sex<-factor(biomark$sex,levels=c(1,2),labels=c('男','女'))
+sex1<-as.vector(table(biomark$sex))
+sex_label<-c('男','女')
+#乙肝变量的处理
+biomark$HBsAg[biomark$HBsAg=='']<-NA
+biomark$HBsAg[biomark$HBsAg=='阴性']<-1
+biomark$HBsAg[biomark$HBsAg=='阳性']<-2
+biomark$HbsAg<-factor(biomark$HBsAg,levels=c(1,2),labels=c('阴性','阳性'))
+HbsAg1<-as.vector(table(biomark$HBsAg))
+HbsAg_label<-c('阴性','阳性')
+#教育水平
+biomark$educati2[biomark$educati==1]<-1
+biomark$educati2[biomark$educati==2]<-1
+biomark$educati2[biomark$educati==3]<-1
+biomark$educati2[biomark$educati==4]<-2
+biomark$educati2[biomark$educati==5]<-3
+biomark$educati2<-factor(biomark$educati,levels = c(1,2,3),labels = c('初中及以下','高中','大学及以上'))
+education<-as.vector(table(biomark$educati2))
+education_label<-c('初中及以下','高中','大学及以上')
+#癌症家族史
+biomark$cancerfh<-factor(biomark$cancerfh,levels = c(1,2),labels = c('无','有'))
+cancerfh<-as.vector(table(biomark$cancerfh))
+cancerfh_label<-c('无','有')
+
+```
+```{r}
+par(mfrow=c(2,2),mar=c(5,1,1,1))
+pie(sex1,labels=paste(sex_label,'(',round(sex1*100/sum(sex1),2),'%)'),main='性别')
+pie(HbsAg1,labels=paste(HbsAg_label,'(',round(HbsAg1*100/sum(HbsAg1),2),'%)'),main='乙肝病毒表面抗原')
+pie(education,labels=paste(education_label,'(',round(education*100/sum(education),2),'%)'),main='教育水平')
+pie(cancerfh,labels=paste(cancerfh_label,'(',round(cancerfh*100/sum(cancerfh),2),'%)'),main='癌症家族史')
+par(opar)
+```
+2.2疾病史分布
+```{r}
+disea<-biomark[,paste0('disea',1:33)]
+```
+```{r}
+pie_function<-function(x){
+  b<-as.vector(table(x))
+  b_label<-c('无','有')
+  pie(b,labels=paste(b_label,'(',round(b*100/sum(b),2),'%)'),main='',col=c('lightblue','red'))
+}
+#1肺部疾病
+par(mfrow=c(3,2),mar=c(1,1,1,1), oma = c(0, 0, 3, 0))
+apply(disea[,1:6],2,pie_function)
+mtext("肺部疾病", side = 3, line = 0, outer = T)
+#肝部疾病
+par(mfrow=c(3,2),mar=c(1,1,1,1),oma= c(0, 0, 3, 0))
+apply(disea[,7:12],2,pie_function)
+mtext("肝部疾病", side = 3, line = 0, outer = T)
+#胃部疾病
+par(mfrow=c(6,2),mar=c(0.5,0.5,0.5,0.5),oma= c(0, 0, 3, 0))
+apply(disea[,13:24],2,pie_function)
+mtext("胃部疾病", side = 3, line = 0, outer = T)
+#乳腺疾病
+par(mfrow=c(2,2),mar=c(1,1,1,1),oma= c(0, 0, 3, 0))
+apply(disea[,25:27],2,pie_function)
+mtext("乳腺疾病", side = 3, line = 0, outer = T)
+#常见慢性病
+par(mfrow=c(3,2),mar=c(1,1,1,1),oma= c(0, 0, 3, 0))
+apply(disea[,28:33],2,pie_function)
+mtext("常见慢性病", side = 3, line = 0, outer = T)
+par(opar)
+
+```
+肺部疾病中患有率较高的是慢性支气管炎(2.45%),其次为肺结核(1.73%)
+肝部疾病中患有率较高得是脂肪肝(19.95%),其次为胆结石(5.37%),胆囊息肉(2.9%),其他患有率均不超过1%
+胃部疾病中患有率较高的是萎缩性胃炎(2.92%),其次为胃溃疡(2.71%),幽门螺旋杆菌感染史(2.54%),十二指肠溃疡(1.93%),胃息肉(1.16%)
+乳腺疾病中患有率较高的是乳腺小叶不典型增生(11.64)，改结果有待考证，现场问问卷的人傻傻分不清。
+常见慢性病中患有率较高的是高血压(32.29%),其次为糖尿病(13.44%),高血脂(12.86%),冠心病(8.13%),中风和偏头疼均未超过2%
+
+2.3吸烟情况分布
+```{r results='hide'}
+biomark$smoking<-factor(biomark$smoking,levels = c(1,2,3),labels=c('从不吸烟','目前吸烟','以前吸烟'))
+smoking<-as.vector(table(biomark$smoking))
+smoking_label<-c('从不吸烟','目前吸烟','以前吸烟')
+smoking1<-biomark[which(biomark$smoking=='目前吸烟'),]
+smoking2<-biomark[which(biomark$smoking=='以前吸烟'),]
+hist1<-hist(smoking1$cpd)
+hist2<-hist(smoking2$cpd)
+
+```
+```{r}
+layout(matrix(c(1,2,3,4,5,6),2,2,byrow=TRUE),height = c(1,1))
+pie(smoking,labels=paste(smoking_label,'(',round(smoking*100/sum(smoking),2),'%)'),main='吸烟情况')
+boxplot(cpd~smoking,data=biomark,main='每天吸烟量')
+hist(biomark$cpd,breaks=20,main='总体吸烟量分布',xlab='')
+plot(hist1,col='green',main='目前吸烟和过去吸烟的吸烟量分布',xlab='吸烟量')
+plot(hist2,col='red',add=T)
+legend('topright',c('目前吸烟','过去吸烟'),col=c('green','red'),lty=c(1,1),bty='n')
+```
+(3)慢性乙型肝炎
+3.1查看自报患有乙型肝炎与查出的乙型肝炎情况
+```{r}
+biomark$HBsAg<-factor(biomark$HBsAg,levels = c(1,2),labels = c('阴性','阳性'))
+biomark$disea11<-factor(biomark$disea11,levels = c(1,2),labels = c('否','是'))
+table(biomark$HBsAg,biomark$disea11,dnn=c('金标准','自报'))
+```
+其中自报有幽门螺旋杆菌感染史的人中(27人)，经肿瘤标志物检测，核实15人的确患有幽门螺旋杆菌，不过核实没有的也有可能是已经治好了。
+其中自报未患有幽门螺旋杆菌的居民中，经肿瘤标志物检测，发现有64人患有幽门螺旋杆菌感染。
+
+3.2患有乙型肝炎的样本中，与正常人相比，各种肿瘤标志物的分布情况
+```{r}
+HBsAg1<-biomark[which(biomark$HBsAg=='阴性'),]
+HBsAg2<-biomark[which(biomark$HBsAg=='阳性'),]
+```
+```{r}
+layout(matrix(c(1,2,3,4),2,2,byrow=TRUE))
+boxplot(CEA~HBsAg,data=biomark,main='CEA在乙肝与正常人中的分布')
+boxplot(AFP~HBsAg,data=biomark,main='AFP在乙肝与正常人中的分布')
+boxplot(CA199~HBsAg,data=biomark,main='CA199在乙肝与正常人中的分布')
+boxplot(PG1~HBsAg,data=biomark,main='PG1在乙肝与正常人中的分布')
+
+
+```
+```{r}
+layout(matrix(c(1,2,3,3),2,2,byrow=TRUE))
+HBsAg_hist1<-hist(HBsAg1$CEA,breaks = 20,freq = FALSE,main='正常人群中的CEA分布',xlab = '')
+HBsAg_hist2<-hist(HBsAg2$CEA,breaks = 20,freq = FALSE,main='乙肝人群中的CEA分布',xlab = '')
+plot(HBsAg_hist1,col=brewer.pal(4,'Reds')[4],freq = FALSE,main='正常和乙肝人群中的CEA分布',xlab = '')
+plot(HBsAg_hist2,col=brewer.pal(4,'YlOrRd')[7],add=T,freq = FALSE)
+legend('topright',c('阳性','阴性'),col=c(brewer.pal(3,'RdGy')[5],brewer.pal(4,'Reds')[4]),lty=c(1,1),bty='n',lwd=4)
+```
+
+
+
+```{r}
+layout(matrix(c(1,2,3,3),2,2,byrow=TRUE))
+AFP_hist1<-hist(HBsAg1$AFP,breaks = 20,freq = FALSE,main='正常人群中的AFP分布',xlab = '')
+AFP_hist2<-hist(HBsAg2$AFP,breaks = 20,freq = FALSE,main='乙肝人群中的AFP分布',xlab = '')
+plot(AFP_hist1,col=rgb(1,0,0,0.2),freq = FALSE,main='正常和乙肝人群中的AFP分布',xlab = '')
+plot(AFP_hist2,col = rgb(0,0,0.5,0.2),add=T,freq = FALSE)
+legend('topright',c('阳性','阴性'),col=c(rgb(0,0,0.5,0.2),rgb(1,0,0,0.2)),lty=c(1,1),lwd=5,bty='n')
+```
+
+
+```{r}
+layout(matrix(c(1,2,3,3),2,2,byrow=TRUE))
+CA199_hist1<-hist(HBsAg1$CA199,breaks = 20,freq = FALSE,main='正常人群中的CA199分布',xlab = '')
+CA199_hist2<-hist(HBsAg2$CA199,breaks = 20,freq = FALSE,main='乙肝人群中的CA199分布',xlab = '')
+plot(CA199_hist1,col=rgb(1,0,0,0.2),freq = FALSE,main='正常和乙肝人群中的CA199分布',xlab = '')
+plot(CA199_hist2,col = rgb(0,0,0.5,0.2),add=T,freq = FALSE)
+legend('topright',c('阳性','阴性'),col=c(rgb(0,0,0.5,0.2),rgb(1,0,0,0.2)),lty=c(1,1),lwd=5,bty='n')
+```
+3.3心血管疾病人群中肿瘤标志物的分布
+```{r}
+biomark$cardi<-ifelse(biomark$disea29==1 | biomark$disea30==1 | biomark$disea31==1 ,1,0)
+cardi1<-biomark[which(biomark$cardi==0),]
+cardi2<-biomark[which(biomark$cardi==1),]
+```
+```{r}
+t.test(biomark$AFP~biomark$cardi)
+```
+
+
+```{r}
+layout(matrix(c(1,2,3,4),2,2,byrow=TRUE))
+cardi_hist1<-hist(cardi1$AFP,breaks = 14,freq = FALSE,main='正常人群中的AFP分布',xlab = '')
+cardi_hist2<-hist(cardi2$AFP,breaks = 20,freq = FALSE,main='心血管人群中的AFP分布',xlab = '')
+boxplot(AFP~cardi,data=biomark,main='正常和心血管人群中的AFP分布')
+plot(cardi_hist1,col=rgb(1,0,0,0.2),freq = FALSE,main='正常和心血管人群中的AFP分布',xlab = '')
+plot(cardi_hist2,col = rgb(0,0,0.5,0.2),add=T,freq = FALSE)
+legend('topright',c('阳性','阴性'),col=c(rgb(0,0,0.5,0.2),rgb(1,0,0,0.2)),lty=c(1,1),lwd=5,bty='n')
+```
+结果，心血管人群与正常人群相比，AFP均值稍微高一点，但是无统计血意义。
+
+3.3.1正常女性人群与女性心血管人群相比，肿瘤标志物的分布情况
+```{r}
+layout(matrix(c(1,2,3,4),2,2,byrow=TRUE))
+CA125_hist1<-hist(cardi1$CA125,breaks = 14,freq = FALSE,main='正常人群中的CA125分布',xlab = '')
+CA125_hist2<-hist(cardi2$CA125,breaks = 120,freq = FALSE,main='心血管人群中的CA125分布',xlab = '')
+boxplot(CA125~cardi,data=biomark,main='正常和心血管人群中的CA125分布')
+plot(CA125_hist1,col=rgb(1,0,0,0.2),freq = FALSE,main='正常和心血管人群中的CA125分布',xlab = '',xlim=c(0,50))
+plot(CA125_hist2,col = rgb(0,0,0.5,0.2),add=T,freq = FALSE)
+legend('topright',c('阳性','阴性'),col=c(rgb(0,0,0.5,0.2),rgb(1,0,0,0.2)),lty=c(1,1),lwd=5,bty='n')
+```
+```{r}
+t.test(biomark$CA125~biomark$cardi)
+quantile(biomark$CA125,0.90,na.rm=TRUE)
+```
+
+```{r}
+biomark$disea9<-factor(biomark$disea9,levels=c(1,2),labels=c('否','是'))
+biomark$bmi<-biomark$weight/((biomark$height/100)^2)
+
+
+```
+
+3.4对BMI的相关性研究
+3.4.1 脂肪肝人群和正常人群中BMI的分布差异 
+```{r}
+ggplot(data=biomark,aes(x=disea9,y=bmi))+geom_boxplot(na.rm = TRUE)+geom_jitter(width=0.2,height=0.5,alpha=0.5)+facet_wrap(~sex,nrow=2)
+```
+```{r}
+t.test(AFP~disea9,data=biomark)
+ggplot(data=biomark,aes(x=disea9,y=AFP))+geom_boxplot()
+```
+
+2019年7月2日晚
+想法：
+(1)如果有病例的话，可否寻找符合筛查的cut-off值,寻找的病例是否应该是患者诊断前的肿瘤标志物的值？
+(2)探寻肿瘤标志物在正常人群，轻微病变，癌前病变等阶段水平的差异，如正常组，肝炎，肝硬化，癌前病变，肝癌等人群中的分布是否有差异
+(3)参看一下文献---Clinical Evaluation of CA72-4 for Screening Gastric Cancer in A Healthy Population: A Multicenter Retrospective Study
+2019年7月3日下午
+
+##想法
+###根据不同的cut-off值在筛查中分为两组，正常组和不正常组，两组人群都做影像学检查，统计在两组中各种检查结果的分布是否有差异。
+###计算不同cut-off值下，有多少人有高得水平值
+###根据检查结果如肝硬化，脂肪肝，等分组，查看肿瘤标志物的水平差异
+###将多种肿瘤标志物结合查看筛查结果的效果如何（灵敏度 & 特异度）
+###不同截断值下，筛查的灵敏度和特异度如何
+###血清蛋白AFP结合超声筛查肝癌效果如何
+###Categorizing a prognostic variable: review of methods, code for easy implementation and applications to decision-making about cancer treatments
+
+2019年7月5日上午
+
+##想法
+##(1)对慢性乙型肝炎患者进行超声及肿瘤标志物筛查的有效性
+##(2)对慢性乙型肝炎患者进行肝癌筛查的效果--随访
+##(3)在慢性乙肝人群中，筛查工具的有效性---meta分析
+##(4)在慢性乙型肝炎患者中，肝脏超声结合AFP筛查肝癌的有效性，来自天津的研究和荟萃分析
+
+(1)AFP截止点定为7,CA199定为27的的话
+```{r}
+biomark$AFP_7<-ifelse(biomark$AFP>7,1,0)
+biomark$AFP_20<-ifelse(biomark$AFP>20,1,0)
+biomark$AFP_200<-ifelse(biomark$AFP>200,1,0)
+biomark$AFP_300<-ifelse(biomark$AFP>400,1,0)
+biomark$CA199_27<-ifelse(biomark$CA199>27,1,0)
+biomark$CA199_200<-ifelse(biomark$CA199>200,1,0)
+biomark$CA199_400<-ifelse(biomark$CA199>400,1,0)
+
+table(biomark$AFP_7)
+table(biomark$AFP_20)
+table(biomark$AFP_200)
+table(biomark$AFP_400)
+table(biomark$CA199_27)
+table(biomark$CA199_200)
+table(biomark$CA199_400)
+
+
+```
+(1.1)肝硬化中，超过截止点的人数
+```{r}
+table(biomark$disea10,biomark$AFP_7)
+table(biomark$disea10,biomark$CA199_27)
+
+```
+#在自报肝硬化患者人群中AFP超过截止点7的有0人
+#在自报肝硬化患者人群中CA199超过截止点7的有0人
+
+(1.2.1)在慢性乙型肝炎患者中
+```{r}
+table(biomark$HBsAg,biomark$AFP_7)
+table(biomark$HBsAg,biomark$CA199_27)
+
+```
+#在慢性乙型肝炎患者人群(76人)中AFP有5人超过截止点7
+#在慢性乙型肝炎患者人群(76人)中CA199有7人超过截止点27
+(1.2.2)在慢性乙型肝炎患者中，超过截止点20的人数有
+```{r}
+table(biomark$HBsAg,biomark$AFP_20)
+table(biomark$HBsAg,biomark$CA199_200)
+```
+#在慢性乙型肝炎患者人群中(76人)中有2人超过截止点20
+(1.2.3)在慢性乙型肝炎患者中，超过截止点200的人数有
+```{r}
+table(biomark$HBsAg,biomark$AFP_200)
+```
+#在慢性乙型肝炎患者人群中（76人）有1人超过截止点200
+(1.2.3)在慢性乙型肝炎患者中，超过截止点400的人数有
+```{r}
+table(biomark$HBsAg,biomark$AFP_400)
+```
+(2)糖尿病
+```{r}
+biomark%>%filter(disea28==2)%>%group_by(sex)%>%summarise(n())
+biomark%>%group_by(disea28)%>%summarise(mean(AFP))
+biomark%>%group_by(disea28)%>%summarise(mean(CEA))
+biomark%>%group_by(disea28)%>%summarise(mean(CA199))
+biomark%>%group_by(disea28)%>%summarise(mean(CA125,na.rm=TRUE))
+biomark%>%group_by(disea28)%>%summarise(mean(CA153,na.rm=TRUE))
+```
+
+2019年7月4日中午
+#想法
+(1)文献：Spatial distribution characteristics of tumor marker CA724 reference values in China.
+
+2019年7月4日晚
+(1)肿瘤标志物的一些柱状图和条形图(以AFP为例)
+肿瘤标志物CEA--5，AFP--20  CA199--27   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

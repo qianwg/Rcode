@@ -1,0 +1,571 @@
+---
+title: "AFP筛查肝癌的相关性研究"
+author: "sc"
+date: "2019/7/4"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+# 2019年7月4日上午
+
+ **想法**  
+1. **对慢性乙型肝炎患者进行超声及肿瘤标志物筛查的有效性**   
+2. **对慢性乙型肝炎患者进行肝癌筛查的效果--随访**  
+3. **在慢性乙肝人群中，筛查工具的有效性---meta分析**  
+4. **在慢性乙型肝炎患者中，肝脏超声结合AFP筛查肝癌的有效性，来自天津的研究和荟萃分析**  
+
+# 2019年7月5日上午
+
+ **explore**  
+1. 在乙型肝炎患者中，各项肿瘤标志物阳性所占的比例  
+
+```{r setup}
+library(rio)
+library(tidyverse)
+```
+```{r}
+knitr::opts_chunk$set(
+  echo=FALSE
+)
+```
+
+1.1 import data  
+```{r include=FALSE}
+
+biomark<-import('~/肿瘤标志物相关研究/biomark+PAD20190628.xlsx')
+```
+1.2 new frame 
+```{r include=FALSE}
+library(reshape2)
+data1<-biomark[which(biomark$HBsAg=='阳性'),c('sex','AFP','CA199','CEA','CA125','CA153')]
+data1$AFP_20<-ifelse(data1$AFP>20,1,0)
+data1$CA199_27<-ifelse(data1$CA199>27,1,0)
+data1$CEA_5<-ifelse(data1$CEA>5,1,0)
+data1$CA125_35<-ifelse(data1$CA125>35,1,0)
+data1$CA153_25<-ifelse(data1$CA153>25,1,0)
+data2<-data1[,c('sex','AFP_20','CA199_27','CEA_5','CA125_35','CA153_25')]
+data3<-melt(data2,id.vars = 'sex',variable.name = 'marker',value.name='value')
+data3$value<-factor(data3$value,levels=c(1,0),labels = c('positive','negtive'))
+data3$sex<-factor(data3$sex,levels = c(1,2),labels = c('male','female'))
+```
+```{r}
+mytheme<-theme(plot.title=element_text(hjust=0.5,face="bold"),
+              axis.title=element_text(face="bold",size=10),
+              axis.text=element_text(face="bold",size=9),
+              panel.grid.major = element_line(colour=NA),
+              panel.grid.minor = element_blank(),
+              panel.background=element_rect(fill=NA,color='black')
+             )
+```
+
+
+1.3 graph  
+```{r include=FALSE}
+library(tidyverse)
+library(patchwork)
+```
+```{r echo=FALSE}
+p<-ggplot(data=data3,aes(x=marker,fill=value,na.rm=TRUE))+geom_bar(position = 'fill',na.rm = TRUE,width = 0.5)+labs(y='proportion',title='overall')+
+          theme(plot.title = element_text(hjust=0.5))
+p1<-ggplot(data=data3[which(data3$sex=='male'),],aes(x=marker,fill=value))+geom_bar(position = 'fill',na.rm = TRUE,width = 0.7)+labs(y='proportion')+
+         theme(legend.position = 'none',plot.title = element_text(hjust=0.5),axis.text.x = element_text(size=7,face='bold'))+labs(title='male')
+p2<-ggplot(data=data3[which(data3$sex=='female'),],aes(x=marker,fill=value))+geom_bar(position = 'fill',na.rm = TRUE,width = 0.7)+labs(y='proportion')+
+         theme(legend.position = 'none',plot.title = element_text(hjust=0.5),axis.text.x=element_text(size=7,face='bold'))+labs(title='female',y='')
+p+{
+  p1+
+    p2+
+    plot_layout(ncol=2)
+}+plot_layout(ncol = 1)
+```
+**result**：the CA199 positive rate is higher than other tumor marker   
+            among the patients who carrying the hepatitis B virus    
+
+# 2019年7月7日  
+肿瘤标志物AFP在肝炎人群中和正常人群中的分布差异
+```{r}
+biomark$Cirrhosis[biomark$disea10==2 | biomark$disea11==2]<-1
+biomark$Cirrhosis[biomark$nodisea==2]<-0
+biomark$Cirrhosis<-factor(biomark$Cirrhosis,levels = c(1,0),labels = c('肝炎','健康'))
+```
+
+```{r}
+library(rafalib)
+```
+```{r}
+mypar(1,2)
+dat=list(Cirrhosis=biomark[which(biomark$Cirrhosis=='肝炎'),c('AFP')],health=biomark[which(biomark$Cirrhosis=='健康'),c('AFP')])
+boxplot(dat,xlab='group',ylab='AFP',cex=0)
+stripchart(dat,vertical = TRUE,method='jitter',pch = 16,add=TRUE,col=1,main='log-scale of AFP')
+boxplot(dat,xlab='group',ylab='AFP',log='y',cex=0)
+stripchart(dat,vertical = TRUE,method='jitter',pch=16,add=TRUE,col=1)
+```
+```{r}
+wilcox.test(AFP~Cirrhosis,data=biomark)
+```
+
+
+
+
+
+# 2019年7月5日下午  
+
+2. **the relationship between the tumor marker and age**  
+
+2.1 Kolmogorov–Smirnov test among these tumor marker  
+```{r include=FALSE}
+ks.test(scale(biomark$AFP),'pnorm',exact=FALSE)
+ks.test(scale(biomark$CEA),'pnorm',exact=FALSE)
+ks.test(scale(biomark$CA199),'pnorm',exact=FALSE)
+ks.test(scale(biomark$CA153),'pnorm',exact=FALSE)
+ks.test(scale(biomark$CA125),'pnorm',exact=FALSE)
+ks.test(scale(biomark$age),'pnorm',exact=FALSE)
+
+```
+2.2 Quantile Quantile Plots  
+```{r}
+layout(matrix(c(1,2,3,4,5,6),2,3,byrow = TRUE))
+qqnorm(biomark$AFP,main='AFP')
+qqline(biomark$AFP)
+qqnorm(biomark$CA125,main='CA125')
+qqline(biomark$CA125)
+qqnorm(biomark$CA199,main='CA199')
+qqline(biomark$CA199)
+qqnorm(biomark$CEA,main='CEA')
+qqline(biomark$CEA)
+qqnorm(biomark$CA153,main='CA153')
+qqline(biomark$CA153)
+```
+
+**reslut** ：these tumor marker are not normal distribution
+```{r echo=FALSE}
+
+biomark$age_group[biomark$age>=40 & biomark$age<45]<-1
+biomark$age_group[biomark$age>=45 & biomark$age<50]<-2
+biomark$age_group[biomark$age>=50 & biomark$age<55]<-3
+biomark$age_group[biomark$age>=55 & biomark$age<60]<-4
+biomark$age_group[biomark$age>=60 & biomark$age<65]<-5
+biomark$age_group[biomark$age>=65 & biomark$age<70]<-6
+biomark$age_group[biomark$age>=70]<-7
+```
+```{r echo=FALSE}
+#AFP
+p1<-biomark%>%group_by(age_group)%>%summarise(median=median(AFP,na.rm=T),P25=quantile(AFP,0.25,na.rm = TRUE),P75=quantile(AFP,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='AFP')+annotate('text',x=1.5,y=6,label='P=0.037',size=3)
+#CEA
+p2<-biomark%>%group_by(age_group)%>%summarise(median=median(CEA,na.rm=T),P25=quantile(CEA,0.25,na.rm = TRUE),P75=quantile(CEA,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CEA')+annotate('text',x=1.5,y=5.5,label='P<0.001',size=3)
+#CA199
+p3<-biomark%>%group_by(age_group)%>%summarise(median=median(CA199,na.rm=T),P25=quantile(CA199,0.25,na.rm = TRUE),P75=quantile(CA199,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CA199')+annotate('text',x=1.5,y=22,label='P<0.001',size=3)
+#CA153
+p4<-biomark%>%group_by(age_group)%>%summarise(median=median(CA153,na.rm=T),P25=quantile(CA153,0.25,na.rm = TRUE),P75=quantile(CA153,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CA153')+annotate('text',x=1.5,y=15,label='P<0.001',size=3)
+#CA125
+p5<-biomark%>%group_by(age_group)%>%summarise(median=median(CA125,na.rm=T),P25=quantile(CA125,0.25,na.rm = TRUE),P75=quantile(CA125,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CA125')+annotate('text',x=6.5,y=32,label='P<0.001',size=3)
+#HBs
+HBsAg<-data.frame(table(biomark$age_group,biomark$HBsAg))
+p6<-ggplot(data=HBsAg,aes(x=Var1,y=Freq,fill=Var2))+geom_bar(position = 'fill',stat='identity')+scale_x_discrete(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>70'))+
+  labs(x='age',y='proportion')+theme(legend.title = element_blank())
+
+```
+
+```{r echo=FALSE}
+(p1 | p2) /
+   (p3 | p4) /
+      (p5 | p6)
+```
+
+
+```{r echo=FALSE}
+biomark$sex<-factor(biomark$sex,levels = c(1,2),labels=c('男','女'))
+```
+
+**sex**
+
+```{r echo=FALSE}
+
+#AFP
+p1_1<-biomark%>%group_by(sex,age_group)%>%summarise(median=median(AFP,na.rm=T),P25=quantile(AFP,0.25,na.rm = TRUE),P75=quantile(AFP,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median,color=sex))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+theme(legend.position ='none')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='AFP')
+#CEA
+p2_1<-biomark%>%group_by(sex,age_group)%>%summarise(median=median(CEA,na.rm=T),P25=quantile(CEA,0.25,na.rm = TRUE),P75=quantile(CEA,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median,color=sex))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CEA')
+#CA199
+p3_1<-biomark%>%group_by(sex,age_group)%>%summarise(median=median(CA199,na.rm=T),P25=quantile(CA199,0.25,na.rm = TRUE),P75=quantile(CA199,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median,color=sex))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+theme(legend.position ='none')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CA199')
+#CA153
+p4_1<-biomark%>%group_by(age_group)%>%summarise(median=median(CA153,na.rm=T),P25=quantile(CA153,0.25,na.rm = TRUE),P75=quantile(CA153,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1,color='darkcyan')+geom_point(color='darkcyan')+geom_line(color='darkcyan')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CA153')
+#CA125
+p5_1<-biomark%>%group_by(age_group)%>%summarise(median=median(CA125,na.rm=T),P25=quantile(CA125,0.25,na.rm = TRUE),P75=quantile(CA125,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1,color='darkcyan')+geom_point(color='darkcyan')+geom_line(color='darkcyan')+
+scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CA125')
+#HBs
+HBsAg<-data.frame(table(biomark$age_group,biomark$HBsAg))
+p6_1<-ggplot(data=HBsAg,aes(x=Var1,y=Freq,fill=Var2))+geom_bar(position = 'fill',stat='identity')+scale_x_discrete(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>70'))+
+  labs(x='age',y='proportion')+theme(legend.title = element_blank())
+
+```
+
+```{r echo=FALSE}
+(p1_1 | p2_1) /
+   (p3_1 | p4_1) /
+      (p5_1 | p6_1)
+```
+```{r}
+biomark$CEA[biomark$CEA>200]<-NA
+```
+
+
+```{r echo=FALSE}
+CEA_group<-split(biomark$CEA,biomark$age)
+boxplot(CEA_group,main='age and CEA',log='y')
+```
+
+3 correlation test  
+```{r}
+cor.test(biomark$age,biomark$CA153,method = 'spearman')
+```
+CEA CA199 CA125 CA153 ralated with the age,however AFP has no relationship with age
+
+4. Distribution of tumor marker percentile sites  
+
+4.1 the function which caculate the percentile
+```{r echo=FALSE}
+percent_value<-function(x){
+  p1<-round(quantile(x,0.01,na.rm=TRUE),2)
+  p2.5<-round(quantile(x,0.025,na.rm=TRUE),2)
+  p5<-round(quantile(x,0.05,na.rm=TRUE),2)
+  p10<-round(quantile(x,0.1,na.rm=TRUE),2)
+  p25<-round(quantile(x,0.25,na.rm=TRUE),2)
+  p50<-round(quantile(x,0.5,na.rm=TRUE),2)
+  p75<-round(quantile(x,0.75,na.rm=TRUE),2)
+  p90<-round(quantile(x,0.9,na.rm=TRUE),2)
+  p95<-round(quantile(x,0.95,na.rm=TRUE),2)
+  p97.5<-round(quantile(x,0.975,na.rm=TRUE),2)
+  p98<-round(quantile(x,0.98,na.rm=TRUE),2)
+  p99<-round(quantile(x,0.99,na.rm=TRUE),2)
+  table<-c(p1,p2.5,p5,p10,p25,p50,p75,p90,p95,p97.5,p98,p99)
+}
+```
+the tumor marker percentile sites
+```{r echo=FALSE}
+library(flextable)
+library(xtable)
+```
+
+
+```{r results='asis',echo=FALSE}
+table<-data.frame(t(apply(biomark[,c('AFP','CEA','CA199','CA153','CA125')],2,percent_value)))
+names(table)<-c('1%','2.5%','5%','10%','25%','50%','75%','90%','95%','97.5','98%','99%')
+rownames(table)<-c('AFP(0-7)','CEA(0-5)','CA199(0-27)','CA153(0-25)','CA125(0-35)')
+ft<-xtable_to_flextable(xtable(table,digits=2))
+ft
+```
+
+
+
+
+**男性**  
+```{r results='asis',echo=FALSE}
+table1<-t(apply(biomark[which(biomark$sex=='男'),c('AFP','CEA','CA199','CA153','CA125')],2,percent_value))
+rownames(table1)<-c('AFP(0-7)','CEA(0-5)','CA199(0-27)','CA153(0-25)','CA125(0-35)')
+xtable_to_flextable(xtable(table1[1:3,],digits=2))
+```
+**女性**  
+```{r results='asis',echo=FALSE}
+table2<-t(apply(biomark[which(biomark$sex=='女'),c('AFP','CEA','CA199','CA153','CA125')],2,percent_value))
+xtable_to_flextable(xtable(table2,digits=2))
+```
+
+
+# 吸烟与肿瘤标志物的关系
+
+```{r echo=FALSE}
+biomark$AFP[biomark$AFP>200]<-NA
+```
+```{r echo=FALSE}
+biomark$baonian<-(biomark$cpd/20)*biomark$smkyrs
+```
+
+
+```{r echo=FALSE,warning=FALSE}
+mp1<-ggplot(data=biomark[which(biomark$smoking==2),],aes(x=cpd))+geom_histogram(binwidth = 1,color='black',fill='blue')
+ggplot(data=biomark[which(biomark$smoking==2),],aes(x=baonian,y=AFP))+geom_point()+geom_smooth(method = 'lm')
+```
+
+
+# 2019年7月8日上午  
+ **1.CEA在各个年龄段中的百分位数值**    
+```{r}
+a<-list()
+for(i in 1:7){
+  a[[i]]<-data.frame(t(biomark%>%filter(age_group==i)%>%select(CEA)%>%apply(2,percent_value)))
+}
+CEA.tab<-do.call(rbind,a)
+rownames(CEA.tab)<-c('40-44','45-49','50-54','55-59','60-64','65-69','>=70')
+names(CEA.tab)<-c('1%','2.5%','5%','10%','25%','50%','75%','90%','95%','97.5','98%','99%')
+xtable_to_flextable(xtable(CEA.tab))
+```
+
+# 2019年07月08日
+the relationship between the tumor marker
+```{r}
+corr.marker<-round(cor(biomark[,c('AFP','CEA','CA199','CA153','CA125')],use='complete.obs'),2)
+xtable_to_flextable(xtable(corr.marker))
+```
+# 2019年07月09日晚  
+
+
+1.CEA为何随着年龄的增长会有增长的趋势？  
+2.CA125在女性中为何随着年龄的增长会有降低的趋势？  
+
+3.女性绝经前后CA125水平分布
+```{r}
+wilcox.test(CA125~menopause,data=biomark)
+```
+
+
+```{r}
+mypar(1,2)
+dat=list(NO=biomark[which(biomark$menopause==1),c('CA125')],YES=biomark[which(biomark$menopause==2),c('CA125')])
+boxplot(dat,xlab='menopause',ylab='CA125',cex=0)
+stripchart(dat,vertical = TRUE,method='jitter',pch = 16,add=TRUE,col=1,main='log-scale of CA125')
+boxplot(dat,xlab='menopause',ylab='CA125',log='y',cex=0,ylab='log(CA125)')
+stripchart(dat,vertical = TRUE,method='jitter',pch=16,add=TRUE,col=1)
+```
+
+  没有绝经的比绝经的CA125要偏高
+参考文献：__Large prospective study of ovarian cancer screening in high-risk women: CA125 cut-point defined by menopausal status__  
+
+2019年7月11日
+# 年龄和CA125的相关性
+
+```{r}
+biomark$CA125[biomark$CA125>50]<-NA
+```
+
+```{r warning=FALSE}
+ggplot(data=biomark,aes(x=age,y=CA125))+geom_boxplot(aes(group=cut_width(age,1)))
+```
+# 绝经状态与CA153的关系
+```{r}
+mypar(1,2)
+dat1=list(NO=biomark[which(biomark$menopause==1),c('CA153')],YES=biomark[which(biomark$menopause==2),c('CA153')])
+boxplot(dat1,xlab='menopause',ylab='CA153',cex=0)
+stripchart(dat1,vertical = TRUE,method='jitter',pch = 16,add=TRUE,col=1,main='log-scale of CA125')
+boxplot(dat1,xlab='menopause',ylab='CA153',log='y',cex=0)
+stripchart(dat1,vertical = TRUE,method='jitter',pch=16,add=TRUE,col=1)
+```
+```{r}
+mypar(1,2)
+dat2=list(NO=biomark[which(biomark$menopause==1),c('CEA')],YES=biomark[which(biomark$menopause==2),c('CEA')])
+boxplot(dat2,xlab='menopause',ylab='CEA',cex=0)
+stripchart(dat2,vertical = TRUE,method='jitter',pch = 16,add=TRUE,col=1,main='log-scale of CA125')
+boxplot(dat2,xlab='menopause',ylab='CEA',log='y',cex=0)
+stripchart(dat2,vertical = TRUE,method='jitter',pch=16,add=TRUE,col=1)
+```
+
+```{r}
+
+```
+
+```{r}
+mypar(1,3)
+boxplot(dat,xlab='menopause',ylab='CA125',log='y',cex=0,ylab='log(CA125)')
+stripchart(dat,vertical = TRUE,method='jitter',pch=16,add=TRUE,col=1)
+boxplot(dat1,xlab='menopause',ylab='CA153',log='y',cex=0)
+stripchart(dat1,vertical = TRUE,method='jitter',pch=16,add=TRUE,col=1)
+boxplot(dat2,xlab='menopause',ylab='CEA',log='y',cex=0)
+stripchart(dat2,vertical = TRUE,method='jitter',pch=16,add=TRUE,col=1)
+```
+```{r}
+names(biomark)
+```
+## 有乳腺癌家族史的女性体内肿瘤标志物分布情况
+```{r}
+biomark[,c('catpmoth','catpsist1','catpsist2','catpchil2')]<-apply(biomark[,c('catpmoth','catpsist1','catpsist2','catpchil2')],2,function(x){x<-ifelse(!is.na(x),x,0)})
+#biomark$breast.family<-factor(biomark$breast.family,levels = c(0,1),labels = c('无','有'))
+```
+```{r}
+biomark$breast.family<-ifelse(biomark$sex==2,ifelse(biomark$catpmoth==2 | biomark$catpsist1==2 | biomark$catpsist2==2 | biomark$catpchil2==2,2,1),NA)
+```
+
+```{r}
+str(biomark$breast.family);str(biomark$CA125);table(biomark$breast.family);table(biomark$sex)
+```
+
+```{r}
+#mypar(2,3)
+boxplot(CA125~breast.family,data=biomark,log='y',cex=0)
+stripchart(CA125~breast.family,data=biomark,vertical = TRUE,method='jitter',pch=16,add=TRUE,col=1)
+```
+
+
+```{r}
+wilcox.test(biomark$CA153~biomark$menopause)
+```
+结果暗示：CA153的水平与绝经状态有关  
+
+# 考察绝经年龄与CA125/CA153的关系  
+
+2019年7月12日
+1. 绝经年龄的分布
+```{r warning=FALSE,echo=FASLE}
+agemenopau1<-ggplot(data=biomark,aes(agemenopau))+geom_histogram(binwidth = 1,fill='lightblue',color='black')+scale_x_continuous(breaks =c(20,25,30,35,40,45,50,55,60))
+agemenopau2<-ggplot(data=biomark,aes(agemenopau))+geom_histogram(binwidth = 5,fill='lightblue',color='black')
+agemenopau1+agemenopau2+plot_layout(ncol=2)
+```
+
+结果暗示：绝经年龄主要分布与50岁左右。 提示CA125水平的高低与绝经状态有关  
+2. 查看绝经状态下CA125百分位数的分布  
+```{r}
+table_menopause<-data.frame(t(apply(biomark[which(biomark$menopause==2),c('CA125','CA153')],2,percent_value)))
+names(table_menopause)<-c('1%','2.5%','5%','10%','25%','50%','75%','90%','95%','97.5','98%','99%')
+rownames(table_menopause)<-c('CA125(0-35)','CA153(0-25)')
+xtable_to_flextable(xtable(table_menopause,digits=2))
+```
+3.查看未绝经状态下，女性CA125与CA153的百分位数分布  
+```{r}
+table_menopause2<-data.frame(t(apply(biomark[which(biomark$menopause==1),c('CA125','CA153')],2,percent_value)))
+names(table_menopause2)<-c('1%','2.5%','5%','10%','25%','50%','75%','90%','95%','97.5','98%','99%')
+rownames(table_menopause2)<-c('CA125(0-35)','CA153(0-25)')
+xtable_to_flextable(xtable(table_menopause2,digits=2))
+```
+结果： 女性未绝经前CA125的cut-off值(98%--64.19)远远比绝经后cut-off(22.77)值要高,暗示是否需要针对不同人群制定不同的cut-off值  
+  
+
+4.探索绝经的年龄与CA125的关系  
+```{r warning=FALSE}
+ggplot(data=biomark[which(biomark$menopause==2),],aes(age,CA125))+geom_boxplot(aes(group=cut_width(age,1)))+scale_y_log10()
+```
+
+
+结果暗示:绝经年龄与CA125的水平无显著性关系
+
+# 2019年07月12日上午  
+**1. 探索BMI分类后，与肿瘤标志物的关系如何?  
+# 2019年07月13日上午  
+BMI中国分类标准：  
+体重过低：＜18.5  
+体重正常：18.5-24  
+超重：≥24  
+BMI计算公式： $ weight/height^{2}
+
+```{r}
+biomark$bmi<-biomark$weight/((biomark$height/100)^2)
+biomark$bmi_group[biomark$bmi<18.5]<-1
+biomark$bmi_group[biomark$bmi>=18.5 & biomark$bmi<24]<-2
+biomark$bmi_group[biomark$bmi>=24]<-3
+biomark$bmi_group<-factor(biomark$bmi_group,levels = c(1,2,3),labels=c('偏瘦','正常','超重'))
+
+```
+```{r}
+
+bmi_table<-biomark%>%group_by(bmi_group)%>%summarise(median=median(CA125,na.rm=TRUE),q75=quantile(CA125,0.75,na.rm = TRUE),q25=quantile(CA125,0.25,na.rm=TRUE))
+bmi_table
+```
+```{r}
+kruskal.test(CA125~bmi_group,data=biomark)
+```
+```{r }
+bmi_ca125<-ggplot(data=biomark,aes(x=bmi,y=CA125))+geom_point()+mytheme
+bmi_ca153<-ggplot(data=biomark,aes(x=bmi,y=CA153))+geom_point()+mytheme
+bmi_CEA<-ggplot(data=biomark,aes(x=bmi,y=CEA))+geom_point()+mytheme
+bmi_AFP<-ggplot(data=biomark,aes(x=bmi,y=AFP))+geom_point()+mytheme
+bmi_ca199<-ggplot(data=biomark,aes(x=bmi,y=log(CA199)))+geom_point()+mytheme
+NA1<-ggplot(data=biomark,aes())
+```
+```{r warning=FALSE}
+(bmi_ca125 | bmi_ca153) /
+  (bmi_CEA | bmi_AFP) /
+   (bmi_ca199 | NA1)
+```
+
+
+
+```{r warning=FALSE}
+bmi_graph1<-ggplot(data=biomark,aes(x=bmi))+geom_histogram(binwidth = 1,color='black',fill='lightblue')+scale_x_continuous(breaks=c(10,15,20,25,30,35,40,45,50))+labs(title='The histogram of BMI')+mytheme+
+  scale_y_continuous(expand = c(0,0),limits=c(0,800))
+bmi_graph2<-ggplot(data=biomark,aes(x=bmi_group,fill=bmi_group))+geom_bar()+mytheme+theme(axis.title.x=element_blank(),legend.position = 'none')+labs(title='The bar chart of BMI')+ scale_y_continuous(expand = c(0,0),limits=c(0,3500))
+bmi_graph3<-ggplot(data=biomark,aes(x=bmi_group,y=log(CA125)))+geom_boxplot()+mytheme+theme(axis.title.x = element_blank())+labs(title='the boxplot between BMI and log(CA125)')+
+   scale_y_continuous(expand = c(0,0),limits=c(0,5))
+bmi_graph4<-ggplot(data=bmi_table,aes(x=bmi_group,y=median,fill=bmi_group))+geom_bar(stat='identity',width = 0.5)+geom_errorbar(aes(ymin=q25,ymax=q75),width=0.15,position = position_dodge(0.9))+
+  mytheme+theme(legend.position = 'none')+labs(title='median ± quantile')+ scale_y_continuous(expand = c(0,0),limits=c(0,15))
+
+```
+
+
+
+```{r warning=FALSE}
+(bmi_graph1 | bmi_graph2) /
+   (bmi_graph3 | bmi_graph4) 
+```
+
+结果： 暂时在BMI和CA125之间看不出什么关系来  
+
+2019年7月13日下午
+
+# 参考文献: New reference levels for CA125 in pre-and postmenopausal woman.1998年的文献,较早提出女性CA125的水平与绝经状态有关
+
+
+2019年7月13日晚  
+
+# 参考文献: Correlates of circulating ovarian cancer early detection markers and their contribution to discrimination of early detection models: results from the EPIC cohort
+
+# 探索AFP与BMI的关系
+
+```{r}
+AFP_table<-biomark%>%group_by(bmi_group)%>%summarise(median=median(AFP,na.rm=TRUE),q75=quantile(AFP,0.75,na.rm = TRUE),q25=quantile(AFP,0.25,na.rm=TRUE))
+AFP_table
+```
+
+```{r warning=FALSE}
+AFP_bmi1<-ggplot(data=biomark,aes(x=bmi_group,y=log(AFP)))+geom_boxplot()+mytheme+theme(axis.title.x = element_blank())+labs(title='the boxplot between BMI and log(AFP)')+
+   scale_y_continuous(expand = c(0,0),limits=c(0,5))
+AFP_bmi2<-ggplot(data=AFP_table,aes(x=bmi_group,y=median,fill=bmi_group))+geom_bar(stat='identity',width = 0.5)+geom_errorbar(aes(ymin=q25,ymax=q75),width=0.15,position = position_dodge(0.9))+
+  mytheme+theme(legend.position = 'none')+labs(title='median ± quantile')+ scale_y_continuous(expand = c(0,0),limits=c(0,6))
+AFP_bmi1+AFP_bmi2+plot_layout(ncol=2)
+```
+```{r}
+kruskal.test(AFP~bmi_group,data=biomark)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
