@@ -86,7 +86,34 @@ pvalue<-1-pchisq(LRT,2);pvalue
 
 #--------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------
-  
+# the extended cox model for time-dependency variables
+#1.add some function of time as Xi*g(t),the g(t) is a function of time
+addit<-survSplit(leukemia,cut=leukemia$survt[leukemia$staus==1],end='survt',start='start',event='status',id='id')
+head(addit)
+addit$timesex<-log(addit$survt)*addit$sex
+coxph(Surv(start,survt,status)~timesex+rx+logwbc++sex+cluster(id),data=addit,method='breslow')
+#2.extended cox mode with heaviside function
+plot(survfit(Surv(survt,status)~sex,data=leukemia))
+plot(survfit(Surv(survt,status)~sex,data=leukemia),fun='cloglog')
+model4<-coxph(Surv(survt,status)~logwbc+rx+strata(sex),data=leukemia)
+plot(survfit(model4))#矫正了logwbc与rx后的K-M关于sex的生存曲线
+abline(v=11,col='red')
+##K-M曲线显示男女在11周前后,yield a constant hazard ration for less than 11 weeks and 11 weeks or more of follow-up
+#2.1 one heaviside function:the g(t) is a heaviside function
+addit2<-survSplit(leukemia,cut=11,end='survt',start='start',event='status',id='id')
+head(addit2)
+v1<-addit2$sex*(addit2$start<11)
+v2<-addit2$sex*(addit2$start>=11)
+coxph(Surv(start,survt,status)~sex+logwbc+rx+v1+cluster(id),data=addit2,method = 'breslow')#one heaviside function
+coxph(Surv(start,survt,status)~logwbc+rx+v1++v2+cluster(id),data=addit2,method = 'breslow')#two heaviside function
+
+
+
+
+#---------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------
+#parametric survival models
+
 
 
 
