@@ -57,6 +57,6 @@ gghistogram(biomark7,x='AFP',bins=100,y='..density..',rug=TRUE,add='median',add.
 #CA199
 gghistogram(biomark7,x='CA199',bins=100,y='..density..',rug=TRUE,add='median',add.params = list(color='red'))+
   scale_x_continuous(limits = c(0,100))+geom_vline(aes(xintercept=27),col='green')
-
+#CA125
 
 
