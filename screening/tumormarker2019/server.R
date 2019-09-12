@@ -50,7 +50,7 @@ shinyServer(function(input, output) {
             CA199.risk[CA199>27*2 & CA199<=27*3]<-2
             CA199.risk[CA199>27*3 & CA199<=27*4]<-3
             CA199.risk[CA199>27*4 & CA199<200]<-4
-            CA199.risk[CA199>=200]<-4
+            CA199.risk[CA199>=200]<-5
             
             #CA153
             CA153.risk[CA153<=30]<-0
@@ -65,7 +65,7 @@ shinyServer(function(input, output) {
             CA125.risk[CA125>70 & CA125<=105]<-2
             CA125.risk[CA125>105 & CA125<=140]<-3
             CA125.risk[CA125>140 & CA125<200]<-4
-            CA125.risk[CA125>=200]<-4
+            CA125.risk[CA125>=200]<-5
             
         
             
