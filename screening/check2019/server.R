@@ -81,10 +81,11 @@ shinyServer(function(input, output) {
     #家族史函数
     famfun<-function(data){
       names(data)<-tolower(names(data))
-        data[,c('catpfath','catpmoth','cathbrot1','cathbrot2',
-                'catpsist1','catpsist2','catpchil1','catpchil2')]<-apply(data[,c('catpfath','catpmoth','cathbrot1','cathbrot2',
+        data[,c('catpfath','catpmoth','catpbrot1','catpbrot2',
+                'catpsist1','catpsist2','catpchil1','catpchil2')]<-apply(data[,c('catpfath','catpmoth','catpbrot1','catpbrot2',
                                                                                  'catpsist1','catpsist2','catpchil1','catpchil2')],2,
-                                                                                function(x){x<-ifelse(x %in% family,family2[x],99)})        return(data)
+                                                                                function(x){x<-ifelse(x %in% family,family2[x],99)}) 
+        return(data)
     }
     famfun2<-function(data){
       data[,c('CATPFath','CATPMoth','CATPBrot1','CATPBrot2',
@@ -307,7 +308,16 @@ shinyServer(function(input, output) {
                    'check3745','check_part1','check_part2',
                    'check_part3','end')
     data_right<-reactive({
-        data_risht<-dataset_result()[which(dataset_result()$end==0),-which(names(dataset_result()) %in% check_name3)]
+        data_right<-dataset_result()[which(dataset_result()$end==0),-which(names(dataset_result()) %in% check_name3)]
+        data_right$catpfath<-ifelse(data_right$cafath==1 | is.na(data_right$cafath),NA,data_right$catpfath)
+        data_right$catpmoth<-ifelse(data_right$camoth==1 | is.na(data_right$camoth),NA,data_right$catpmoth)
+        data_right$catpbrot1<-ifelse(data_right$cabrot1==1 | is.na(data_right$cabrot1),NA,data_right$catpbrot1)
+        data_right$catpbrot2<-ifelse(data_right$cabrot2==1 | is.na(data_right$cabrot2),NA,data_right$catpbrot2)
+        data_right$catpsist1<-ifelse(data_right$casist1==1 | is.na(data_right$casist1),NA,data_right$catpsist1)
+        data_right$catpsist2<-ifelse(data_right$casist2==1 | is.na(data_right$casist2),NA,data_right$catpsist2)
+        data_right$catpchil1<-ifelse(data_right$chil1==1 | is.na(data_right$cachil1),NA,data_right$catpchil1)
+        data_right$catpchil2<-ifelse(data_right$cachil2==1 | is.na(data_right$cachil2),NA,data_right$catpchil2)
+        data_right
     })
     #反应式5 单独输出不合格问卷
     data_wrong<-reactive({
