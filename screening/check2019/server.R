@@ -32,7 +32,15 @@ shinyServer(function(input, output) {
               '前列腺','肝胆','肝胆癌','脊膜癌','子宫内膜癌','子宫内膜','其他','喉咽癌','壶腹周围癌','纤维细胞瘤','肉瘤',
               '胆囊炎','脑瘤','再生障碍贫血','多发性骨髓瘤','肝胆管癌','脊髓瘤','脑转癌','腹部细胞癌','胆总管癌',
               '脑瘤','淋巴癌，肾癌','黑色素癌','汗腺癌','脊髓瘤','贲门癌，肠癌','肺转淋巴癌','肺癌、食道癌','大肠癌、胃癌',
-              '肺癌、肠癌','肝癌腹膜癌','胃十二指肠癌','胆总管下段癌','肠癌、子宫癌','胃癌、结肠癌'
+              '肺癌、肠癌','肝癌腹膜癌','胃十二指肠癌','胆总管下段癌','肠癌、子宫癌','胃癌、结肠癌','乳癌癌','卵巢输卵管癌',
+              '甲状腺肿瘤','胃癌喉癌',
+              '上颌窦癌 ','喉癌，肺癌','喉癌肾癌','喷门癌食管癌','壶腹癌','已扩散全身','幽门癌','慢性淋巴瘤',
+              '淋巴瘤','粘膜癌', '肝癌，肺癌','肝癌，骨癌','肺小细胞癌','肺癌.','肺癌胃癌肝癌','肺癌 骨癌','肺转脑',
+              '肾癌肺癌','胃癌肝癌','胸膜间皮瘤','胸膜间隙癌','脂肪瘤','腹壶癌','腹部癌','膀胱癌、前列','血液癌',
+              '血液肿瘤','面部','骨髓瘤','鳞癌','黑素瘤',
+               '乳腺癌子宫癌','乳腺癌宫颈癌','乳腺癌，肺癌','乳腺癌 胃癌','乳腺癌转肝癌',
+              '宫颈癌、胃癌','淋巴癌、肺癌','直肠癌、肝癌','肺泡癌','肺癌.','胃癌、肠癌','直肠癌、肺癌','淋巴癌，肺癌',
+              '肺癌/骨癌','乳腺啊','肝癌乳腺癌','胃癌，肺癌','乳腺癌卵巢癌','肺癌、肾癌','子宫癌肝癌'
     )
     family2<-c('外唇癌'=1,'唇癌'=2,'舌癌'=3,'牙龈癌'=4,'口底癌'=5,'口腔癌'=6,'腮腺癌'=7,'大涎腺癌'=8,
                '扁桃体癌'=9,'口咽癌'=10,'鼻咽癌'=11,'下咽癌'=12,'咽癌'=13,'食管癌'=14,'贲门癌'=16,'胃癌'=16,
@@ -52,7 +60,14 @@ shinyServer(function(input, output) {
                '胆囊炎'=99,'脑瘤'=99,'再生障碍贫血'=99,'多发性骨髓瘤'=99,'肝胆管癌'=24,'脊髓瘤'=99,'腹部细胞癌'=99,'胆总管癌'=99,
                '脑瘤'=99,'黑色素癌'=91,'汗腺癌'=99,'脊髓瘤'=99,'贲门癌，肠癌'=16,'肺转淋巴癌'=34,'肺癌、食道癌'=34,
                '肺癌、肠癌'=34,'大肠癌、胃癌'=24,'肝癌腹膜癌'=24,'胃十二指肠癌'=16,'胆总管下段癌'=99,'肠癌、子宫癌'=75,
-               '胃癌、结肠癌'=24
+               '胃癌、结肠癌'=24,'乳癌癌'=47,'卵巢输卵管癌'=72,'甲状腺肿瘤'=68,'胃癌喉癌'=16,
+               '上颌窦癌 '=99,'喉癌，肺癌'=34,'喉癌肾癌'=12,'喷门癌食管癌'=16,'壶腹癌'=99,'已扩散全身'=99,'幽门癌'=16,'慢性淋巴瘤'=99,
+               '淋巴瘤'=87,'粘膜癌'=99, '肝癌，肺癌'=34,'肝癌，骨癌'=24,'肺小细胞癌'=34,'肺癌.'=34,'肺癌胃癌肝癌'=34,'肺癌 骨癌'=34,'肺转脑'=34,
+               '肾癌肺癌'=34,'胃癌肝癌'=16,'胸膜间皮瘤'=99,'胸膜间隙癌'=99,'脂肪瘤'=99,'腹壶癌'=99,'腹部癌'=99,'膀胱癌、前列'=99,'血液癌'=99,
+               '血液肿瘤'=99,'面部'=99,'骨髓瘤'=99,'鳞癌'=99,'黑素瘤'=99,
+               '乳腺癌子宫癌'=47,'乳腺癌宫颈癌'=47,'乳腺癌，肺癌'=34,'乳腺癌 胃癌'=16,'乳腺癌转肝癌'=47,
+               '宫颈癌、胃癌'=16,'淋巴癌、肺癌'=34,'直肠癌、肝癌'=24,'肺泡癌'=34,'肺癌.'=34,'胃癌、肠癌'=16,'直肠癌、肺癌'=34,
+               '淋巴癌，肺癌'=34, '肺癌/骨癌'=34,'乳腺啊'=47,'肝癌乳腺癌'=24,'胃癌，肺癌'=34,'乳腺癌卵巢癌'=47,'肺癌、肾癌'=34,'子宫癌肝癌'=24  
     )
     ##家族史情况
     familytab<-reactive({
@@ -65,9 +80,11 @@ shinyServer(function(input, output) {
     })
     #家族史函数
     famfun<-function(data){
-        data[,c('CATPFath','CATPMoth','CATPBrot1','CATPBrot2',
-                'CATPSist1','CATPSist2','CATPChil1','CATPChil2')]<-apply(data[,c('CATPFath','CATPMoth','CATPBrot1','CATPBrot2','CATPSist1','CATPSist2','CATPChil1','CATPChil2')],2,
-                                                                                function(x){x<-ifelse(x %in% family,family2[x],99)})
+      names(data)<-tolower(names(data))
+        data[,c('catpfath','catpmoth','catpbrot1','catpbrot2',
+                'catpsist1','catpsist2','catpchil1','catpchil2')]<-apply(data[,c('catpfath','catpmoth','catpbrot1','catpbrot2',
+                                                                                 'catpsist1','catpsist2','catpchil1','catpchil2')],2,
+                                                                                function(x){x<-ifelse(x %in% family,family2[x],99)}) 
         return(data)
     }
     famfun2<-function(data){
@@ -101,25 +118,30 @@ shinyServer(function(input, output) {
     })
     #自建问卷评价函数
     questionare<-function(data){
+        #data<-data.frame(apply(data,2,function(x){
+        #  x<-ifelse(x==99 | x==9,NA,x)
+        #}))
         names(data)<-tolower(names(data))
+        data$telephone<-as.character(data$telephone)
+        data$cellphone<-as.character(data$cellphone)
         attach(data)
         check1<-ifelse(is.na(id),1,0)
         check2<-ifelse(is.na(name),1,0)
         check3<-ifelse(is.na(sex),1,0)
         check4<-ifelse(is.na(age),1,0)
-        check5<-ifelse(is.na(race),1,0)
+        check5<-ifelse(is.na(race),1,ifelse(race<=2 & race>=1,0,1))
         check6<-ifelse(is.na(persoid),1,0)
         check7<-ifelse(is.na(cellphone) & is.na(telephone),1,0)
-        check8<-ifelse(is.na(marriag),1,0)
-        check9<-ifelse(is.na(educati),1,0)
-        check10<-ifelse(is.na(employm),1,0)
-        check11<-ifelse(employm==4 & !is.na(employm),0,ifelse(is.na(occupat),1,0))
-        check12<-ifelse(is.na(income),1,0)
-        check13<-ifelse(is.na(bloodtp),1,0)
-        check14<-ifelse(is.na(insuran),1,0)
+        check8<-ifelse(!is.na(marriag),ifelse(marriag>=1 & marriag<=4,0,1),1)
+        check9<-ifelse(!is.na(educati) & educati>=1 & educati<=6,0,1)
+        check10<-ifelse(!is.na(employm) & employm>=1 & employm<=4,0,1)
+        check11<-ifelse(!is.na(occupat),0,ifelse(employm==4,0,1))
+        check12<-ifelse(!is.na(income) & income>=1 & income<=4,0,1)
+        check13<-ifelse(!is.na(bloodtp) & bloodtp>=1 & bloodtp<=5,0,1)
+        check14<-ifelse(!is.na(insuran) & insuran>=1 & insuran<=7,0,1)
         check15<-ifelse(is.na(address),1,0)
-        check16<-ifelse(is.na(weight),1,0)
-        check17<-ifelse(is.na(height),1,0)
+        check16<-ifelse(!is.na(weight) & weight>=30 & weight<=400,0,1)
+        check17<-ifelse(!is.na(height),ifelse(height>=30 & height<=250,0,1),1)
         check18<-ifelse(is.na(investigat),1,0)
         check19<-ifelse(is.na(investdate),1,0)
         check20<-ifelse(is.na(recorddate),1,0)
@@ -131,11 +153,9 @@ shinyServer(function(input, output) {
         area<-vector()
         qu<-vector()
         area[id>=31010001 & id<=31013000]<-"东海街"
-        area[id>=31030001 & id<=31033000]<-"尖山街"
         area[id>=31040001 & id<=31043000]<-"马场街"
         area[id>=31050001 & id<=31053000]<-"天塔街"
         area[id>=31100001 & id<=31103000]<-"柳林街"
-        area[id>=31120001 & id<=31123000]<-"大营门街"
         qu[id>=31010001 & id<=31123000]<-'河西区'
         ###和平区
         area[id>=33010001 & id<=33013000]<-"小白楼街"
@@ -158,30 +178,24 @@ shinyServer(function(input, output) {
         ###河东区
         area[id>=35010001 & id<=35013000]<-"上杭路街"
         area[id>=35020001 & id<=35023000]<-"鲁山道街"
-        area[id>=35030001 & id<=35033000]<-"二号桥街"
         area[id>=35040001 & id<=35043000]<-"唐家口街"
-        area[id>=35050001 & id<=35053000]<-"大王庄街"
         area[id>=35060001 & id<=35063000]<-"富民路街"
         qu[id>=35010001 & id<=35063000]<-'河东区'
         ### 红桥区
         area[id>=37010001 & id<=37013000]<-"芥园道街"
         area[id>=37020001 & id<=37023000]<-"邵公庄街"
         area[id>=37030001 & id<=37033000]<-"和苑街"
-        area[id>=37040001 & id<=37043000]<-"铃铛阁街"
-        area[id>=37050001 & id<=37053000]<-"双环坉街"
         area[id>=37060001 & id<=37063000]<-"丁字沽街"
         qu[id>=37010001 & id<=37063000]<-'红桥区'
         ###蓟州区
         area[id>=32010001 & id<=32013000]<-"官庄镇"
-        area[id>=32020001 & id<=32023000]<-"别山镇"
         area[id>=32030001 & id<=32033000]<-"下营镇"
-        area[id>=32040001 & id<=32043000]<-"马伸桥镇"
         area[id>=32050001 & id<=32053000]<-"桑梓镇"
         area[id>=32060001 & id<=32063000]<-"东二营镇"
         qu[id>=32010001 & id<=32063000]<-'蓟州区'
         check21<-ifelse(is.na(area),1,0)
-        check22<-ifelse(!is.na(cellphone),ifelse(cellphone>=10000000001 & cellphone<=19999999999,0,1),0)
-        check23<-ifelse(!is.na(telephone),ifelse(telephone>=20000001 & telephone<=89999999,0,1),0)
+        check22<-ifelse(!is.na(cellphone),ifelse(substr(cellphone,1,1)==1 & nchar(cellphone)==11,0,1),1)
+        check23<-ifelse(!is.na(telephone),ifelse(substr(telephone,1,1)>=2 & nchar(telephone)==8,0,1),1)
         check24<-ifelse(!is.na(name),ifelse(nchar(name)>=2 & nchar(name)<=4,0,1),0)
         check25<-ifelse(!is.na(persoid),ifelse(nchar(persoid)==18,0,ifelse(nchar(persoid)==15,0,1)),0)
         check26<-ifelse(check22==1 & check23==1,1,0)
@@ -229,7 +243,7 @@ shinyServer(function(input, output) {
         check2930<-ifelse(check29==1 | check30==1 |check3000==1 | check3010==1,1,0)#整个疾病史有无错误
         #3.吸烟史
         check31<-ifelse(!is.na(smoking),ifelse(smoking==2,ifelse(is.na(cpd) | is.na(smkyrs),1,0),0),0)
-        check32<-ifelse(!is.na(smoking),ifelse(smoking==3,ifelse(is.na(cpd) | is.na(smkyrs)| is.na(quitsmkyrs),1,0),0),0)
+        check32<-ifelse(!is.na(smoking),ifelse(smoking==3,ifelse(!is.na(cpd) & !is.na(smkyrs) & !is.na(quitsmkyrs) & quitsmkyrs>0,0,1),0),0)
         check33<-ifelse(is.na(smoking),1,0)
         check3132<-ifelse(check31==1 |check32==1 |check33==1,1,0)#合并吸烟史的错误
         #4.职业暴露史
@@ -249,13 +263,21 @@ shinyServer(function(input, output) {
         check36<-ifelse(!is.na(noccuexp),ifelse(noccuexp==1 & expouse_score<=8,1,0),0)
         check3536<-ifelse(check34==1 | check35==1 | check36==1,1,0)#合并职业暴露方面的错误
         #5.女性生理与生育方面
-        check37<-ifelse(sex==2 & !is.na(sex),ifelse(is.na(agemenarch)| is.na(menopause) | is.na(deliver),1,0),0)
+        check37_1<-ifelse(sex==2,ifelse(!is.na(agemenarch) & !is.na(menopause) & !is.na(deliver) & menopause>=1 & menopause<=2 & deliver>=1 & deliver<=2,0,1),0)
+        check37_2<-ifelse(sex==2,ifelse(abortion==2,ifelse(induabort>10 | sponabort>10,1,0),0),0)
+        check37<-ifelse(check37_1==0 & check37_2==0,0,1)
         check38<-ifelse(sex==1 & !is.na(agemenarch) & !is.na(sex),1,0)
-        check39<-ifelse(!is.na(sex) & sex==2 & agemenarch>0 & agemenarch<99 & agemenarch>age & !is.na(agemenarch)& !is.na(age),1,0)
-        check40<-ifelse(!is.na(menopause) & !is.na(sex) & !is.na(agemenopau) & !is.na(age),ifelse(sex==2 & menopause==2 & agemenopau<99 & agemenopau>age,1,0),0)
+        check39<-ifelse(!is.na(sex) & sex==2 & agemenarch>0 & agemenarch<99 & agemenarch>age & !is.na(agemenarch) & !is.na(age),1,0)
+        check40_2<-ifelse(sex==2,ifelse(menopause==2,ifelse(agemenopau>5 & agemenopau<=age,0,1),0),0)
+        check40_1<-ifelse(!is.na(menopause) & !is.na(sex) & !is.na(agemenopau) & !is.na(age),ifelse(sex==2 & menopause==2 & agemenopau<99 & agemenopau>age,1,0),0)
+        check40<-ifelse(check40_1==0 & check40_2==0,0,1)
         check41<-ifelse(!is.na(menopause) & !is.na(sex) & !is.na(agemenopau) & !is.na(agemenarch),ifelse(sex==2 & menopause==2 & agemenopau<99 & agemenarch<99 & agemenopau<agemenarch,1,0),0)
-        check42<-ifelse(sex==2 & deliver==2 & agefirdeli<99 & agefirdeli>age & !is.na(sex) &!is.na(deliver) &!is.na(agefirdeli) &!is.na(age),1,0)
-        check43<-ifelse(sex==2 & deliver==2 & is.na(agefirdeli) & !is.na(sex) & !is.na(deliver),1,0)
+        check42_1<-ifelse(sex==2 & deliver==2 & agefirdeli<99 & agefirdeli>age & !is.na(sex) &!is.na(deliver) &!is.na(agefirdeli) &!is.na(age),1,0)
+        check42_2<-ifelse(sex==2,ifelse(deliver==2,ifelse(deliver<=10 & deliver>=1 & agefirdeli<=age & agefirdeli>agemenarch,0,1),0),0)
+        check42<-ifelse(check42_1==1 | check42_2==1,1,0)
+        check43_1<-ifelse(sex==2 & deliver==2 & is.na(agefirdeli)  & !is.na(sex) & !is.na(deliver),1,0)
+        check43_2<-ifelse(sex==2,ifelse(deliver==2,ifelse(agefirdeli<=age & agefirdeli>agemenarch,0,1),0),0)
+        check43<-ifelse(check43_1==0 & check43_2==0,0,1)
         check44<-ifelse(sex==2 & menopause==2 & is.na(agemenopau)& !is.na(sex) &!is.na(menopause),1,0)
         check3745<-ifelse(check37==1 | check38==1 | check39==1 | check40==1 | check41==1 | check42==1 | check43==1 | check44==1,1,0)
         check_part3_table<-data.frame(check27,check28,check29,check30,check3000,check3010,
@@ -282,8 +304,20 @@ shinyServer(function(input, output) {
     check_name2<-c('area','qu',paste("check",1:44,sep=""),'check2728','check2930','check3132','check3536',
                    'check3745','check_part1','check_part2',
                    'check_part3','end')
+    check_name3<-c(paste("check",1:44,sep=""),'check2728','check2930','check3132','check3536','check3000','check3010',
+                   'check3745','check_part1','check_part2',
+                   'check_part3','end')
     data_right<-reactive({
-        dataset_result()[which(dataset_result()$end==0),-which(names(dataset_result()) %in% check_name2)]
+        data_right<-dataset_result()[which(dataset_result()$end==0),-which(names(dataset_result()) %in% check_name3)]
+        data_right$catpfath<-ifelse(data_right$cafath==1 | is.na(data_right$cafath),NA,data_right$catpfath)
+        data_right$catpmoth<-ifelse(data_right$camoth==1 | is.na(data_right$camoth),NA,data_right$catpmoth)
+        data_right$catpbrot1<-ifelse(data_right$cabrot1==1 | is.na(data_right$cabrot1),NA,data_right$catpbrot1)
+        data_right$catpbrot2<-ifelse(data_right$cabrot2==1 | is.na(data_right$cabrot2),NA,data_right$catpbrot2)
+        data_right$catpsist1<-ifelse(data_right$casist1==1 | is.na(data_right$casist1),NA,data_right$catpsist1)
+        data_right$catpsist2<-ifelse(data_right$casist2==1 | is.na(data_right$casist2),NA,data_right$catpsist2)
+        data_right$catpchil1<-ifelse(data_right$chil1==1 | is.na(data_right$cachil1),NA,data_right$catpchil1)
+        data_right$catpchil2<-ifelse(data_right$cachil2==1 | is.na(data_right$cachil2),NA,data_right$catpchil2)
+        data_right
     })
     #反应式5 单独输出不合格问卷
     data_wrong<-reactive({
@@ -328,7 +362,7 @@ shinyServer(function(input, output) {
         inFile<-input$file
         if(is.null(inFile))
             return(NULL)
-        datatable(data_check2(),options=list(),class="cell-border stripe",colnames = c('编号','姓名','街道',
+        datatable(data_check2(),options=list(),class="cell-border stripe",colnames = c('街道','编号','姓名',
                                                                                       '第一部分','第二部分','第三部分','合计'))%>%formatStyle('id',
                                                                                                                                 'end',backgroundColor = styleEqual(c(1,0),c('red','gray'))
                                                                                       )
@@ -351,7 +385,7 @@ shinyServer(function(input, output) {
    
      check_one<-reactive({
         check_one2<-dataset_result()[which(id==input$id),]
-        names(check_one2)[192:239]<-c('编号','姓名','性别','年龄','种族','身份证','电话','婚姻','文化程度',
+        names(check_one2)[193:240]<-c('编号','姓名','性别','年龄','种族','身份证','电话','婚姻','文化程度',
                                             '就业','职业','收入','血型','社保','地址','体重','身高','调查者','调查日','录入日','第一部分合计',
                                             '编号范围','手机','座机','姓名逻辑','身份证逻辑','电话逻辑','第二部分合计',
                                             '癌症家族史1','癌症家族史2','疾病史1','疾病史2','疾病史缺失1','疾病史缺失2',
@@ -365,33 +399,33 @@ shinyServer(function(input, output) {
         check_one()[,c('id','name')]
     )
     output$ID2table<-renderTable(
-        check_one()[,192:206]
+        check_one()[,193:207]
         #[,which(names(check_one()) %in% c(paste("check",1:15,sep="")))]
     )
     output$ID3table<-renderTable(
-        check_one()[,207:212]
+        check_one()[,208:213]
         #[,which(names(check_one()) %in% c(paste("check",16:20,sep=""),'check_part1'))]
     )
     output$ID4table<-renderTable(
-        check_one()[,213:219]
+        check_one()[,214:220]
         #[,which(names(check_one()) %in% c('check_part2',paste("check",21:26,sep="")))]
     )
     
     
     output$ID5table<-renderTable(
-        check_one()[220:221]
+        check_one()[221:222]
         #[,c('check27','check28')]
     )
     output$ID6table<-renderTable(
-        check_one()[,222:225]
+        check_one()[,223:226]
         #[,c('check29','check30','check3000','check3010')]
     )
     output$ID7table<-renderTable(
-        check_one()[,226:228]
+        check_one()[,227:229]
         #[,c('check31','check32','check33')]
     )
     output$ID8table<-renderTable(
-        check_one()[,229:231]
+        check_one()[,230:232]
         #[,c('check34','check35','check36')]
         
     )
