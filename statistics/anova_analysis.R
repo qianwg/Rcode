@@ -1,3 +1,4 @@
+#模拟数据
 data<-matrix(runif(100,0,1),nrow=10)
 #定义1-3,4-6,7-10分别为三种类别
 library(reshape2)
