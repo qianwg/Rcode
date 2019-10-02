@@ -98,6 +98,7 @@ ggplot(data=PG1_freq,aes(x=levels,y=freq,fill=levels))+geom_bar(stat='identity')
 #3.PG2分布
 summary(biomark5.3$PG2)
 gghistogram(biomark5.3,x='PG2',bins=30,rug=TRUE,add='median',add.params = list(color='red'))
+#gghistogram(biomark5.3,x='PG2',bins=30,rug=TRUE,add='median',color='PG1_range',add.params = list(color='red'))
 #4.PGR的
 summary(biomark5.3$PGR)
 #5.sex
@@ -107,7 +108,12 @@ ggboxplot(biomark5.3,x='sex',y='PG1',color='sex',palette = 'jco',add='jitter')+
     theme(legend.position = 'none')
 #AGE
 ggscatter(biomark5.3,x='age',y='PG1')
-
+#PG2 and PGR
+ggscatter(biomark5.3,x='PG2',y='PGR',alpha=0.2)
+ggscatter(biomark5.3,x='PG2',y='PGR',alpha=0.2,color='PG1_range')
+ggscatter(biomark5.3,x='PG2',y='PGR',alpha=0.2,facet.by='PG1_range')
+#PG1 and PGR
+ggscatter(biomark5.3,x='PG1',y='PGR',alpha=0.2,color='PG1_range')
 
 
 
