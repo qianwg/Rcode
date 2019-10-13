@@ -4,7 +4,7 @@ library(stringr)
 library(ggpubr)
 #-------------------------------------MySQL数数据库连接---------------------------------------------------------------
 #cnn<-dbConnect(MySQL(),host='39.106.31.215',user='root',password='',dbname='screening')#与mysql进行连接
-cnn<-dbConnect(MySQL(),host='49.232.130.131',user='root',password='shengchao123',dbname='screening')#与mysql进行连接
+cnn<-dbConnect(MySQL(),host='49.232.130.131',user='root',password='',dbname='screening')#与mysql进行连接
 # dbListTables(cnn)#查看screening下的数据集
 # dbListFields(cnn,'biomarker')#查看字段
 #解决中文乱码问题
