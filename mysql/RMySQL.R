@@ -4,7 +4,7 @@ library(stringr)
 library(ggpubr)
 #-------------------------------------MySQL数数据库连接---------------------------------------------------------------
 #cnn<-dbConnect(MySQL(),host='39.106.31.215',user='root',password='',dbname='screening')#与mysql进行连接
-cnn<-dbConnect(MySQL(),host='49.232.130.131',user='root',password='',dbname='screening')#与mysql进行连接
+cnn<-dbConnect(MySQL(),host='49.232.130.131',user='root',password='shengchao123',dbname='screening')#与mysql进行连接
 # dbListTables(cnn)#查看screening下的数据集
 # dbListFields(cnn,'biomarker')#查看字段
 #解决中文乱码问题
@@ -13,6 +13,13 @@ dbSendQuery(cnn,paste("SET names",encoding))
 #读取数据集biomark2019
 biomark<-dbReadTable(cnn,'biomarker')
 baseline<-dbReadTable(cnn,'baseline2019')
+baseline<-dbReadTable(cnn,'baseline')#读取17+18+19基线数据
+#读取baseline1718
+#dbClearResult(dbListResults(cnn)[[1]])#清空cnn的查询结果
+baseline1718<-dbGetQuery(cnn,'SELECT * FROM baseline WHERE year=2017 OR year=2018;')
+#res<-dbSendQuery(cnn,'SELECT * FROM baseline WHERE year=2017 OR year=2018;')
+#baseline1718<-dbFetch(res,n=-1) #取所有的数据
+#dbClearResult(res)#清空res的查询
 #通过sql语句查询数据
 # dbGetQuery(cnn,"SELECT b.* FROM biomarker AS b WHERE PG1='>200.0'")#查询PG1>200的
 dbDisconnect(cnn)#断开连接
