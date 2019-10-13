@@ -46,7 +46,7 @@ screening2<-within(screening,{
   area[id>=36050001 & id<=36053000]<-"铁东路街"
   area[id>=36040001 & id<=36043000]<-"建昌道街"
   area[id>=36060001 & id<=36063000]<-"宁园街"
-  qu[id>=36010001 & id<=36053000]<-'河北区'
+  qu[id>=36010001 & id<=36063000]<-'河北区'
   ###河东区
   area[id>=35010001 & id<=35013000]<-"上杭路街"
   area[id>=35020001 & id<=35023000]<-"鲁山道街"
@@ -69,3 +69,4 @@ screening2<-within(screening,{
   qu[id>=32010001 & id<=32063000]<-'蓟州区'
 })
 export(screening2,'C:/Users/dell/Desktop/街道赋值.xlsx')
+export(screening2,'~/街道赋值.xlsx')
