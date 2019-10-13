@@ -1,5 +1,6 @@
 library(rio)
-baseline<-import('C:/Users/dell/Desktop/baseline2019-7-31.xlsx')
+library(openxlsx)
+baseline<-read.xlsx('~/合并文件.xlsx',sheet=2,detectDates = TRUE)
 variables<-c("id","sex","age","race","marriag","educati","employm","occupat",
              "income","bloodtp","insuran","height","weight","screening","cancerfh",
              "selfage","fathage","catpfath","mothage","catpmoth","brot1age","catpbrot1",
@@ -9,13 +10,13 @@ variables<-c("id","sex","age","race","marriag","educati","employm","occupat",
              "stress","agemenarch","menopause","agemenopau","deliver","delivertim","agefirdeli",
              "breastfeed","brstfedmth","abortion","induabort","sponabort","oralcontra","hrt")
 baseline[,variables]<-apply(baseline[,variables],2,as.numeric)
-variable<-c('know1','know2','know3','know4','know5','know6','know7',
+variables2<-c('know1','know2','know3','know4','know5','know6','know7',
             'know8','know9','know10','know101','know102',
             'know103','know104','know201','know202','know203','know204',
             'know301','know302','know303','know304','know401','know402',
             'know403','know404','know501','know502','know503','know504',
             'know601','know602','know603','know604','know701','know702',
             'know703','know704','know801','know802','know803','know804')
-data[,variable]<-apply(data[,variable],2,as.numeric)
+baseline[,variables2]<-apply(baseline[,variables2],2,as.numeric)
 export(data,'C:/Users/dell/Desktop/癌症素养(赋值).xlsx')
-export(baseline,'C:/Users/dell/Desktop/变量赋值.xlsx')
+export(baseline,'~/合并文件2.xlsx')
