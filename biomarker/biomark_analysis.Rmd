@@ -1,0 +1,636 @@
+---
+title: "biomark(exploratory data analysis)"
+author: "sc"
+date: "2019/8/1"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+```{r include=FALSE}
+library(rio)
+library(tidyverse)
+library(patchwork)
+library(reshape2)
+library(ggpubr)
+opar<-par(no.readonly = TRUE)
+```
+## 读取数据
+```{r include=FALSE}
+screening<-import('~/肿瘤标志物相关研究/baseline+biomark+riskscore(2019-7-31).xlsx')
+```
+```{r include=FALSE}
+screening$sex<-factor(screening$sex,levels = c(1,2),labels=c('男','女'))
+```
+```{r}
+screening$ca125.1<-log(screening$ca125)
+screening$ca153.1<-log(screening$ca153)
+screening$ca199.1<-log(screening$ca199)
+screening$cea.1<-log(screening$cea)
+screening$afp.1<-log(screening$afp)
+screening$alcohol<-factor(screening$alcohol,levels = c(1,2),labels=c('否','是'))
+```
+#### 总体分布
+
+
+## 在基线变量中的分布
+
+### 1.1性别
+#### 中位数
+```{r echo=FALSE}
+#cea
+median.cea<-with(screening,aggregate(cea,by=list(sex),FUN='median'));
+median.afp<-with(screening,aggregate(afp,by=list(sex),FUN='median'));
+median.ca199<-with(screening,aggregate(ca199,by=list(sex),FUN='median'))
+```
+
+```{r echo=FALSE}
+p<-ggplot(data=screening,aes(x=sex))
+m1<-ggplot(data=screening,aes(x=sex,y=log(cea),color=sex))+geom_boxplot()+stat_compare_means(label = "p.signif", label.x = 1.5)+theme(legend.position = 'none')
+m2<-ggplot(data=screening,aes(x=sex,log(afp),color=sex))+geom_boxplot()+stat_compare_means(label = "p.signif", label.x = 1.5)+theme(legend.position = 'none')
+m3<-ggplot(data=screening,aes(x=sex,log(ca199),color=sex))+geom_boxplot()+stat_compare_means(label = "p.signif", label.x = 1.5)
+m1+m2+m3+plot_layout(ncol=3)
+```
+
+## 年龄
+```{r}
+screening$age_group[screening$age>=40 & screening$age<45]<-1
+screening$age_group[screening$age>=45 & screening$age<50]<-2
+screening$age_group[screening$age>=50 & screening$age<55]<-3
+screening$age_group[screening$age>=55 & screening$age<60]<-4
+screening$age_group[screening$age>=60 & screening$age<65]<-5
+screening$age_group[screening$age>=65 & screening$age<70]<-6
+screening$age_group[screening$age>=70]<-7
+```
+```{r}
+screening$age_group2[screening$age>=40 & screening$age<50]<-1
+screening$age_group2[screening$age>=50 & screening$age<59]<-2
+screening$age_group2[screening$age>=60 & screening$age<69]<-3
+screening$age_group2[screening$age>=70]<-4
+```
+
+```{r echo=FALSE}
+#AFP
+p1<-screening%>%group_by(age_group)%>%summarise(median=median(afp,na.rm=T),P25=quantile(afp,0.25,na.rm = TRUE),P75=quantile(afp,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='AFP')+annotate('text',x=1.5,y=6,label='P=0.037',size=3)
+#CEA
+p2<-screening%>%group_by(age_group)%>%summarise(median=median(cea,na.rm=T),P25=quantile(cea,0.25,na.rm = TRUE),P75=quantile(cea,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CEA')+annotate('text',x=1.5,y=5.5,label='P<0.001',size=3)
+#CA199
+p3<-screening%>%group_by(age_group)%>%summarise(median=median(ca199,na.rm=T),P25=quantile(ca199,0.25,na.rm = TRUE),P75=quantile(ca199,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CA199')+annotate('text',x=1.5,y=22,label='P<0.001',size=3)
+#CA153
+p4<-screening%>%group_by(age_group)%>%summarise(median=median(ca153,na.rm=T),P25=quantile(ca153,0.25,na.rm = TRUE),P75=quantile(ca153,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CA153')+annotate('text',x=1.5,y=15,label='P<0.001',size=3)
+#CA125
+p5<-screening%>%group_by(age_group)%>%summarise(median=median(ca125,na.rm=T),P25=quantile(ca125,0.25,na.rm = TRUE),P75=quantile(ca125,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='CA125')+annotate('text',x=6.5,y=32,label='P<0.001',size=3)
+#HBs
+HBsAg<-data.frame(table(screening$age_group2,screening$hbsag))
+p6<-ggplot(data=HBsAg,aes(x=Var1,y=Freq,fill=Var2))+geom_bar(position = 'fill',stat='identity')+scale_x_discrete(breaks=c(1,2,3,4),labels=c('40-49','50-59','60-69','>=70'))+
+  labs(x='age',y='proportion')+theme(legend.title = element_blank())
+```
+```{r echo=FALSE,warning=FALSE}
+(p1 | p2) /
+   (p3 | p4) /
+      (p5 | p6)
+```
+## 年龄、性别和肿瘤标志物
+
+```{r echo=FALSE}
+
+#AFP
+p1_1<-screening%>%group_by(sex,age_group)%>%summarise(median=median(afp,na.rm=T),P25=quantile(afp,0.25,na.rm = TRUE),P75=quantile(afp,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median,color=sex))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+theme(legend.position ='none')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='afp')
+#cea
+p2_1<-screening%>%group_by(sex,age_group)%>%summarise(median=median(cea,na.rm=T),P25=quantile(cea,0.25,na.rm = TRUE),P75=quantile(cea,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median,color=sex))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='cea')
+#ca199
+p3_1<-screening%>%group_by(sex,age_group)%>%summarise(median=median(ca199,na.rm=T),P25=quantile(ca199,0.25,na.rm = TRUE),P75=quantile(ca199,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median,color=sex))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1)+geom_point()+geom_line()+theme(legend.position ='none')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='ca199')
+#ca153
+p4_1<-screening%>%group_by(age_group)%>%summarise(median=median(ca153,na.rm=T),P25=quantile(ca153,0.25,na.rm = TRUE),P75=quantile(ca153,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1,color='darkcyan')+geom_point(color='darkcyan')+geom_line(color='darkcyan')+
+  scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='ca153')
+#ca125
+p5_1<-screening%>%group_by(age_group)%>%summarise(median=median(ca125,na.rm=T),P25=quantile(ca125,0.25,na.rm = TRUE),P75=quantile(ca125,0.75,na.rm = TRUE))%>%
+ggplot(aes(x=age_group,y=median))+geom_errorbar(aes(ymin=P25,ymax=P75),width=0.1,color='darkcyan')+geom_point(color='darkcyan')+geom_line(color='darkcyan')+
+scale_x_continuous(breaks=c(1,2,3,4,5,6,7),labels=c('40-44','45-49','50-54','55-59','60-64','65-69','>=70'))+labs(x='age',y='ca125')
+#HBs
+HBsAg<-data.frame(table(screening$age_group2,screening$hbsag))
+p6_1<-ggplot(data=HBsAg,aes(x=Var1,y=Freq,fill=Var2))+geom_bar(position = 'fill',stat='identity')+scale_x_discrete(breaks=c(1,2,3,4),labels=c('40-49','50-59','60-69','>=70'))+
+  labs(x='age',y='proportion')+theme(legend.title = element_blank())
+
+```
+
+
+```{r echo=FALSE,warning=FALSE}
+(p1_1 | p2_1) /
+   (p3_1 | p4_1) /
+      (p5_1 | p6_1)
+
+```
+### 危险因素与肿瘤标志物的分布
+#### 1.1疾病史与肿瘤标志物的分布
+```{r}
+screening[,paste0('disea',1:33)]<-apply(screening[,paste0('disea',1:33)],2,function(x){
+  x<-factor(x,levels = c(1,2),labels = c('否','是'))
+})
+```
+
+
+#### 1.1.1 ca125
+
+```{r}
+disea.ca125<-screening[,c('id','ca125',paste0("disea",1:33))]
+disea.ca125.2<-melt(disea.ca125,id.vars=c('id','ca125'),variable.name = 'disea')
+disea.ca125.2$value<-factor(disea.ca125.2$value,levels = c(1,2),labels = c('否','是'))
+```
+```{r warning=FALSE}
+ggplot(data=subset(disea.ca125.2,!is.na(value) ),aes(x=value,y=ca125,color=value))+geom_boxplot()+facet_wrap(~disea,scale='free')+scale_y_log10()+geom_jitter(width=0.1,alpha=0.4)+
+  stat_compare_means(label = "p.signif", label.x = 1.5)+theme(legend.position = 'none')
+```
+
+
+```{r warning=FALSE}
+g1<-ggboxplot(screening,x='disea5',y='ca125.1',add='jitter',color='disea5',alpha=0.2,xlab='哮喘支气管扩张',ylab='log(CA125)')+theme(legend.position = 'none')+stat_compare_means(label='p.signif',label.x = 1.5,size=8,label.y=6)+scale_y_continuous(limits = c(0,7))
+g2<-ggboxplot(screening,x='disea9',y='ca125.1',add='jitter',color='disea9',alpha=0.2,xlab='脂肪肝',ylab='log(CA125)')+theme(legend.position = 'none')+stat_compare_means(label='p.signif',label.x = 1.5,size=8,label.y=6)+scale_y_continuous(limits = c(0,7))
+g3<-ggboxplot(screening,x='disea14',y='ca125.1',add='jitter',color='disea14',alpha=0.2,xlab='食管或胃上皮内瘤变',ylab='log(CA125)')+theme(legend.position = 'none')+stat_compare_means(label='p.signif',label.x = 1.5,size=8,label.y=6)+scale_y_continuous(limits = c(0,7))
+g4<-ggboxplot(screening,x='disea30',y='ca125.1',add='jitter',color='disea30',alpha=0.2,xlab='高血脂',ylab='log(CA125)')+theme(legend.position = 'none')+stat_compare_means(label='p.signif',label.x = 1.5,size=8,label.y=6)+scale_y_continuous(limits = c(0,7))
+g5<-ggboxplot(screening,x='disea31',y='ca125.1',add='jitter',color='disea31',alpha=0.2,xlab='冠心病',ylab='log(CA125)')+theme(legend.position = 'none')+stat_compare_means(label='p.signif',label.x = 1.5,size=8,label.y=6)+scale_y_continuous(limits = c(0,7))
+ggarrange(g1,g2,g3,g4,g5,ncol=3,nrow=2)
+
+```
+
+
+```{r}
+disea.ca125.3<-disea.ca125.2%>%group_by(disea,value)%>%summarise(median=median(ca125,na.rm = TRUE),p25=quantile(ca125,0.25,na.rm = TRUE),p75=quantile(ca125,0.75,na.rm=TRUE))
+```
+
+```{r warning=FALSE}
+ggplot(data=subset(disea.ca125.3,!is.na(value) ),aes(x=value,y=median,fill=value))+geom_errorbar(aes(ymin=p25,ymax=p75),width=0.1)+geom_bar(stat='identity')+theme(legend.position ='none')+facet_wrap(~disea,scales = 'free')
+  
+```
+```{r}
+disea.ca125<-screening[,c('id','ca125',paste0("disea",1:33))]
+disea.ca125.2<-melt(disea.ca125,id.vars=c('id','ca125'),variable.name = 'disea')
+disea.ca125.2$value<-factor(disea.ca125.2$value,levels = c(1,2),labels = c('否','是'))
+```
+```{r warning=FALSE}
+ggplot(data=subset(disea.ca125.2,!is.na(value) ),aes(x=value,y=ca125,color=value))+geom_boxplot()+facet_wrap(~disea)+scale_y_log10()+geom_jitter(width=0.1,alpha=0.2)+
+  stat_compare_means(label = "p.signif", label.x = 1.5)+theme(legend.position = 'none')
+```
+```{r}
+screening$disea25<-factor(screening$disea25,levels = c(1,2),labels=c('否','是'))
+screening$disea29<-factor(screening$disea29,levels = c(1,2),labels=c('否','是'))
+screening$disea30<-factor(screening$disea30,levels = c(1,2),labels=c('否','是'))
+screening$disea31<-factor(screening$disea31,levels = c(1,2),labels=c('否','是'))
+```
+
+```{r warning=FALSE}
+t1<-ggboxplot(subset(screening,!is.na(disea25)),x='disea25',y='ca153.1',add='jitter',color='disea25',alpha=0.2,xlab='乳腺小叶不典型增生',ylab='log(CA153)')+theme(legend.position = 'none')+stat_compare_means(label='p.signif',label.x = 1.5,size=8,label.y=5)+scale_y_continuous(limits=c(0,6))
+t2<-ggboxplot(screening,x='disea29',y='ca153.1',add='jitter',color='disea29',alpha=0.2,xlab='高血压',ylab='log(CA153)')+theme(legend.position = 'none')+stat_compare_means(label='p.signif',label.x = 1.5,size=8,label.y=5)+scale_y_continuous(limits=c(0,6))
+t3<-ggboxplot(screening,x='disea30',y='ca153.1',add='jitter',color='disea30',alpha=0.2,xlab='高血脂',ylab='log(CA153)')+theme(legend.position = 'none')+stat_compare_means(label='p.signif',label.x = 1.5,size=8,label.y=5)+scale_y_continuous(limits=c(0,6))
+t4<-ggboxplot(screening,x='disea31',y='ca153.1',add='jitter',color='disea31',alpha=0.2,xlab='冠心病',ylab='log(CA153)')+theme(legend.position = 'none')+stat_compare_means(label='p.signif',label.x = 1.5,size=8,label.y=5)+scale_y_continuous(limits=c(0,6))
+
+ggarrange(t1,t2,t3,t4,ncol=2,nrow=2)
+
+```
+```{r warning=FALSE}
+ggbarplot(subset(screening,!is.na(disea25)),x='disea25',y='ca153',add='median_iqr',color='disea25')+stat_compare_means(label.x = 1.5)+theme(legend.position = 'none')
+```
+
+```{r}
+disea.ca125.3<-disea.ca125.2%>%group_by(disea,value)%>%summarise(median=median(ca125,na.rm = TRUE),p25=quantile(ca125,0.25,na.rm = TRUE),p75=quantile(ca125,0.75,na.rm=TRUE))
+```
+```{r warning=FALSE}
+ggplot(data=subset(disea.ca125.3,!is.na(value) ),aes(x=value,y=median,fill=value))+geom_errorbar(aes(ymin=p25,ymax=p75),width=0.1)+geom_bar(stat='identity')+theme(legend.position ='none')+facet_wrap(~disea,scales = 'free')
+  
+```
+
+#### 1.1.2 CA153
+```{r}
+disea.ca153<-screening[,c('id','ca153',paste0("disea",1:33))]
+disea.ca153.2<-melt(disea.ca153,id.vars=c('id','ca153'),variable.name = 'disea')
+disea.ca153.2$value<-factor(disea.ca153.2$value,levels = c(1,2),labels = c('否','是'))
+
+```
+```{r warning=FALSE}
+ggplot(data=subset(disea.ca153.2,!is.na(value) ),aes(x=value,y=ca153,color=value))+geom_boxplot()+facet_wrap(~disea,scale='free')+scale_y_log10()+geom_jitter(width=0.1,alpha=0.2)+
+  stat_compare_means(label = "p.signif", label.x = 1.5)+theme(legend.position = 'none')
+
+```
+```{r}
+disea.ca153.3<-disea.ca153.2%>%group_by(disea,value)%>%summarise(median=median(ca153,na.rm = TRUE),p25=quantile(ca153,0.25,na.rm = TRUE),p75=quantile(ca153,0.75,na.rm=TRUE))
+```
+
+```{r warning=FALSE}
+ggplot(data=subset(disea.ca153.3,!is.na(value) ),aes(x=value,y=median,fill=value))+geom_errorbar(aes(ymin=p25,ymax=p75),width=0.1)+geom_bar(stat='identity')+theme(legend.position ='none')+facet_wrap(~disea,scales = 'free')
+  
+```
+ #### 1.1.3 CEA
+```{r}
+disea.cea<-screening[,c('id','cea','sex',paste0("disea",1:33))]
+disea.cea.2<-melt(disea.cea,id.vars=c('id','cea','sex'),variable.name = 'disea')
+disea.cea.2$value<-factor(disea.cea.2$value,levels = c(1,2),labels = c('否','是'))
+
+```
+```{r warning=FALSE}
+ggplot(data=subset(disea.cea.2,!is.na(value)),aes(x=value,y=cea,color=value))+geom_boxplot()+facet_wrap(~disea,scale='free')+scale_y_log10()+geom_jitter(width=0.1,alpha=0.2)+
+  stat_compare_means(label = "p.signif", label.x = 1.5)+theme(legend.position='none')
+
+```
+```{r}
+
+screening$disea3<-factor(screening$disea3,levels = c(1,2),labels=c('否','是'))
+screening$disea4<-factor(screening$disea4,levels = c(1,2),labels=c('否','是'))
+screening$disea7<-factor(screening$disea7,levels = c(1,2),labels=c('否','是'))
+screening$disea8<-factor(screening$disea8,levels = c(1,2),labels=c('否','是'))
+screening$disea9<-factor(screening$disea9,levels = c(1,2),labels=c('否','是'))
+screening$disea10<-factor(screening$disea10,levels = c(1,2),labels=c('否','是'))
+screening$disea11<-factor(screening$disea11,levels = c(1,2),labels=c('否','是'))
+
+screening$disea15<-factor(screening$disea15,levels = c(1,2),labels=c('否','是'))
+screening$disea18<-factor(screening$disea18,levels = c(1,2),labels=c('否','是'))
+screening$disea20<-factor(screening$disea20,levels = c(1,2),labels=c('否','是'))
+
+screening$disea28<-factor(screening$disea28,levels = c(1,2),labels=c('否','是'))
+screening$disea29<-factor(screening$disea29,levels = c(1,2),labels=c('否','是'))
+screening$disea30<-factor(screening$disea30,levels = c(1,2),labels=c('否','是'))
+screening$disea31<-factor(screening$disea31,levels = c(1,2),labels=c('否','是'))
+screening$disea32<-factor(screening$disea32,levels = c(1,2),labels=c('否','是'))
+screening$disea33<-factor(screening$disea33,levels = c(1,2),labels=c('否','是'))
+```
+```{r}
+r1<-ggboxplot(screening,x='disea4',y='cea.1',color='disea4',add='jitter',ylab='log(CEA)',xlab='肺气肿',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+r2<-ggboxplot(screening,x='disea8',y='cea.1',color='disea8',add='jitter',ylab='log(CEA)',xlab='胆结石',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+r3<-ggboxplot(screening,x='disea9',y='cea.1',color='disea9',add='jitter',ylab='log(CEA)',xlab='脂肪肝',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+r4<-ggboxplot(screening,x='disea15',y='cea.1',color='disea15',add='jitter',ylab='log(CEA)',xlab='十二指肠溃疡',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+r5<-ggboxplot(screening,x='disea18',y='cea.1',color='disea18',add='jitter',ylab='log(CEA)',xlab='胃溃疡',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+r6<-ggboxplot(screening,x='disea28',y='cea.1',color='disea28',add='jitter',ylab='log(CEA)',xlab='糖尿病',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+
+r7<-ggboxplot(screening,x='disea29',y='cea.1',color='disea29',add='jitter',ylab='log(CEA)',xlab='高血压',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+r8<-ggboxplot(screening,x='disea30',y='cea.1',color='disea30',add='jitter',ylab='log(CEA)',xlab='高血脂',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+r9<-ggboxplot(screening,x='disea31',y='cea.1',color='disea31',add='jitter',ylab='log(CEA)',xlab='冠心病',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+
+
+
+r10<-ggboxplot(screening,x='disea32',y='cea.1',color='disea32',add='jitter',ylab='log(CEA)',xlab='中风',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+r11<-ggboxplot(screening,x='disea33',y='cea.1',color='disea33',add='jitter',ylab='log(CEA)',xlab='偏头疼',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+ggarrange(r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,ncol=4,nrow=3)
+
+```
+
+
+#### 1.1.4 AFP
+```{r}
+disea.afp<-screening[,c('id','afp',paste0("disea",1:33))]
+disea.afp.2<-melt(disea.afp,id.vars=c('id','afp'),variable.name = 'disea')
+disea.afp.2$value<-factor(disea.afp.2$value,levels = c(1,2),labels = c('否','是'))
+
+```
+```{r warning=FALSE}
+ggplot(data=subset(disea.afp.2,!is.na(value) ),aes(x=value,y=log(afp),color=value))+geom_boxplot()+facet_wrap(~disea,scales = 'free')+geom_jitter(width=0.1,alpha=0.2)+
+  stat_compare_means(label = "p.signif", label.x = 1.5) +theme(legend.position = 'none')
+
+```
+## 挑选出有意义的变量来
+
+```{r}
+f1<-ggboxplot(screening,x='disea3',y='afp.1',color='disea3',add='jitter',ylab='log(AFP)',xlab='慢性支气管炎',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+f2<-ggboxplot(screening,x='disea10',y='afp.1',color='disea10',add='jitter',ylab='log(AFP)',xlab='肝硬化',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+f3<-ggboxplot(screening,x='disea11',y='afp.1',color='disea11',add='jitter',ylab='log(AFP)',xlab='慢性乙型肝炎',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 5)+theme(legend.position = 'none')
+f4<-ggboxplot(screening,x='disea18',y='afp.1',color='disea18',add='jitter',ylab='log(AFP)',xlab='胃溃疡',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+f5<-ggboxplot(screening,x='disea20',y='afp.1',color='disea20',add='jitter',ylab='log(AFP)',xlab='幽门螺旋杆菌感染史',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+f6<-ggboxplot(screening,x='disea28',y='afp.1',color='disea28',add='jitter',ylab='log(AFP)',xlab='糖尿病',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+
+f7<-ggboxplot(screening,x='disea29',y='afp.1',color='disea29',add='jitter',ylab='log(AFP)',xlab='高血压',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+f8<-ggboxplot(screening,x='disea30',y='afp.1',color='disea30',add='jitter',ylab='log(AFP)',xlab='高血脂',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+
+ggarrange(f1,f2,f3,f4,f5,f6,f7,f8,ncol=4,nrow=2)
+
+```
+#### 1.1.5 CA199
+```{r}
+disea.ca199<-screening[,c('id','ca199',paste0("disea",1:33))]
+disea.ca199.2<-melt(disea.ca199,id.vars=c('id','ca199'),variable.name = 'disea')
+disea.ca199.2$value<-factor(disea.ca199.2$value,levels = c(1,2),labels = c('否','是'))
+
+```
+```{r warning=FALSE}
+ggplot(data=subset(disea.ca199.2,!is.na(value) ),aes(x=value,y=log(ca199)))+geom_boxplot()+facet_wrap(~disea,scales = 'free')+geom_jitter(width=0.1,alpha=0.2)+
+  stat_compare_means(label = "p.signif", label.x = 1.5) 
+
+```
+##CA199选出有意义的变量
+```{r}
+t1<-ggboxplot(screening,x='disea3',y='ca199.1',color='disea3',add='jitter',ylab='log(CA199)',xlab='慢性支气管炎',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+t2<-ggboxplot(screening,x='disea7',y='ca199.1',color='disea7',add='jitter',ylab='log(CA199)',xlab='胆囊息肉',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+t3<-ggboxplot(screening,x='disea9',y='ca199.1',color='disea9',add='jitter',ylab='log(CA199)',xlab='脂肪肝',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+t4<-ggboxplot(screening,x='disea28',y='ca199.1',color='disea28',add='jitter',ylab='log(CA199)',xlab='糖尿病',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+
+t5<-ggboxplot(screening,x='disea29',y='ca199.1',color='disea29',add='jitter',ylab='log(CA199)',xlab='高血压',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+t6<-ggboxplot(screening,x='disea30',y='ca199.1',color='disea30',add='jitter',ylab='log(CA199)',xlab='高血脂',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+t7<-ggboxplot(screening,x='disea31',y='ca199.1',color='disea31',add='jitter',ylab='log(CA199)',xlab='冠心病',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+t8<-ggboxplot(screening,x='disea32',y='ca199.1',color='disea32',add='jitter',ylab='log(CA199)',xlab='中风',alpha=0.1)+stat_compare_means(label='p.signif',label.x=1.5,size=5,label.y = 6)+theme(legend.position = 'none')
+
+ggarrange(t1,t2,t3,t4,t5,t6,t7,t8,ncol=4,nrow=2)
+
+```
+ #### 癌症高危得分与肿瘤标志物的关系
+ 
+```{r}
+biomark.riskscore<-screening[,c('id','cea','afp','ca125','ca153','ca199','lung_score','breast_score','liver_score','gastric_score')]
+biomark.riskscore2<-melt(biomark.riskscore,id.vars=c('id','lung_score','breast_score','liver_score','gastric_score'),variable.name='biomark')
+head(biomark.riskscore2)
+```
+#### 2.1 肺癌高危得分
+```{r warning=FALSE}
+ggplot(data=biomark.riskscore2,aes(x=lung_score,y=value))+geom_point()+geom_smooth(method='lm')+facet_wrap(~biomark,scales='free')+scale_y_log10()
+```
+```{r}
+biomark.riskscore.1<-screening[,c('id','cea','afp','ca125','ca153','ca199','lung_score','breast_score','liver_score','gastric_score')]
+biomark.riskscore2.1<-melt(biomark.riskscore.1,id.vars=c('id','lung_score','breast_score','liver_score','gastric_score'),variable.name='biomark')
+biomark.riskscore2.2<-melt(biomark.riskscore2.1,id.vars=c('id','biomark','value'),variable.name='cancer',value.name = 'value2')
+head(biomark.riskscore2.2)
+```
+```{r warning=FALSE}
+ggplot(data=biomark.riskscore2.2,aes(x=value2,y=value))+geom_point()+geom_smooth(method='lm')+facet_grid(cancer~biomark,scale='free_y')+scale_y_log10()
+```
+
+```{r warning=FALSE}
+biomark.table<-c('cea.1','afp.1','ca199.1','ca125.1','ca153.1')
+lung.table<-paste0('lung',1:5)
+for(i in 1:5){
+  assign(lung.table[i],ggscatter(screening, x = "lung_score", y = biomark.table[i], add = "reg.line",conf.int = TRUE,
+                                    add.params = list(color = "blue", fill = "lightgray"),# Add confidence interval
+          cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
+          cor.coeff.args = list(method = "spearman", label.x = 16, label.sep = "\n"),cor.coef.size=3))
+}
+ggarrange(lung1,lung2,lung3,lung4,lung5,ncol=3,nrow=2)
+```
+```{r warning=FALSE}
+breast.table<-paste0('breast',1:5)
+for(i in 1:5){
+  assign(breast.table[i],ggscatter(screening, x = "breast_score", y = biomark.table[i], add = "reg.line",conf.int = TRUE,
+                                    add.params = list(color = "blue", fill = "lightgray"),# Add confidence interval
+          cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
+          cor.coeff.args = list(method = "spearman", label.x = 8, label.sep = "\n"),cor.coef.size=3))
+}
+ggarrange(breast1,breast2,breast3,breast4,breast5,ncol=3,nrow=2)
+```
+```{r warning=FALSE}
+liver.table<-paste0('liver',1:5)
+for(i in 1:5){
+  assign(liver.table[i],ggscatter(screening, x = "liver_score", y = biomark.table[i], add = "reg.line",conf.int = TRUE,
+                                    add.params = list(color = "blue", fill = "lightgray"),# Add confidence interval
+          cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
+          cor.coeff.args = list(method = "spearman", label.x = 8, label.sep = "\n"),cor.coef.size=3))
+}
+ggarrange(liver1,liver2,liver3,liver4,liver5,ncol=3,nrow=2)
+```
+```{r warning=FALSE}
+gastric.table<-paste0('gastric',1:5)
+for(i in 1:5){
+  assign(gastric.table[i],ggscatter(screening, x = "gastric_score", y = biomark.table[i], add = "reg.line",conf.int = TRUE,
+                                    add.params = list(color = "blue", fill = "lightgray"),# Add confidence interval
+          cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
+          cor.coeff.args = list(method = "spearman", label.x = 8, label.sep = "\n"),cor.coef.size=3))
+}
+ggarrange(gastric1,gastric2,gastric3,gastric4,gastric5,ncol=3,nrow=2)
+```
+
+
+
+
+
+ 
+ #### 家族史与肿瘤标志物的关系
+ 
+```{r}
+screening$lung.family<-ifelse(screening$lung_family>0,1,0)
+screening$breast.family<-ifelse(screening$breast_family>0,1,0)
+screening$liver.family<-ifelse(screening$liver_family>0,1,0)
+screening$gastric.family<-ifelse(screening$gastric_family>0,1,0)
+family.biomark<-screening[,c('id','lung.family','breast.family','liver.family','gastric.family','cea','afp','ca199','ca125','ca153')]
+family.biomark[,c('lung.family','breast.family','liver.family','gastric.family')]<-apply(family.biomark[,c('lung.family','breast.family','liver.family','gastric.family')],2,function(x){
+  x<-factor(x,levels = c(0,1),labels=c("否","是"))
+})
+```
+
+```{r}
+family.biomark.1<-melt(family.biomark,id.vars=c('id','lung.family','breast.family','liver.family','gastric.family'),value.name = 'mark.value',variable.name = 'biomark')
+family.biomark.2<-melt(family.biomark.1,id.vars=c('id','biomark','mark.value'),value.name = 'family.value',variable.name = 'cancer.family')
+head(family.biomark.2)
+```
+```{r warning=FALSE}
+ggplot(data=family.biomark.2,aes(x=family.value,y=log(mark.value)))+geom_boxplot()+geom_jitter(width =0.2,shape = 21,size=2.5,alpha=0.3)+facet_grid(cancer.family~biomark,scale='free')+
+  stat_compare_means(label = "p.signif", label.x = 1.5) 
+```
+### 吸烟史与肿瘤标志物的关系
+
+#### 1.1吸烟状态与肿瘤标志物的关系
+```{r}
+smoking.biomark<-screening[,c('id','smoking','cea.1','afp.1','ca125.1','ca153.1','ca199.1')]
+smoking.biomark.1<-melt(smoking.biomark,id.vars=c('id','smoking'),variable.name='biomark')
+smoking.biomark.1$smoking<-factor(smoking.biomark.1$smoking,levels = c(1,2,3),labels=c('Never','Current','ago'))
+head(smoking.biomark.1)
+```
+```{r warning=FALSE}
+my_comparisons1<- list(c("Never", "Current"), c("Current", "ago"), c("Never", "ago"))
+ggplot(data=smoking.biomark.1,aes(x=smoking,y=value,color=smoking))+geom_boxplot()+geom_jitter(width =0.2,shape = 21,size=2.5,alpha=0.3)+facet_wrap(~biomark,scale='free')+scale_y_log10()+theme(legend.position = 'none')+stat_compare_means(comparisons=my_comparisons1,size=3,label='p.format',hide.ns = TRUE,step.increase = 0.15)+scale_y_continuous(limits=c(-0.5,10))
+```
+```{r}
+s1<-ggboxplot(screening,x='smoking',y='cea.1',add='jitter',add.params = list(size=0.1,jitter=0.4),color='smoking',ylim=c(-2,7))+theme(legend.position = 'none')+stat_compare_means(comparisons = my_comparisons1)
+s2<-ggboxplot(screening,x='smoking',y='afp.1',add='jitter',add.params = list(size=0.1,jitter=0.4),color='smoking')+theme(legend.position = 'none')+stat_compare_means(comparisons = my_comparisons1)
+s3<-ggboxplot(screening,x='smoking',y='ca199.1',add='jitter',add.params = list(size=0.1,jitter=0.4),color='smoking')+theme(legend.position = 'none')+stat_compare_means(comparisons = my_comparisons1)
+s4<-ggboxplot(screening,x='smoking',y='ca125.1',add='jitter',add.params = list(size=0.1,jitter=0.4),color='smoking')+theme(legend.position = 'none')+stat_compare_means(comparisons = my_comparisons1)
+s5<-ggboxplot(screening,x='smoking',y='ca153.1',add='jitter',add.params = list(size=0.1,jitter=0.4),color='smoking')+theme(legend.position = 'none')+stat_compare_means(comparisons = my_comparisons1)
+ggarrange(s1,s2,s3,s4,s5,ncol=3,nrow=2)
+```
+
+```{r}
+screening$smoking<-factor(screening$smoking,levels = c(1,2,3),labels=c('Never','Current','ago'))
+my_comparisons1<- list(c("Never", "Current"), c("Current", "ago"), c("Never", "ago"))
+```
+```{r}
+g1<-ggboxplot(screening,x='smoking',y='cea.1',add='jitter',color='smoking',ylab='cea')+stat_compare_means(comparisons = my_comparisons1)+theme(legend.position = 'none')+border('black')
+g2<-ggbarplot(screening,x='smoking',y='cea',add='median_iqr',color='smoking')+theme(legend.position = 'none')+border('black')
+ggarrange(g1,g2,ncol=2)
+```
+```{r}
+ggboxplot(screening,x='smoking',y='cea.1',add='jitter',color='smoking',facet.by='sex',order=c('Never','ago','Current'),palette = 'jco',ylab='log(CEA)',add.params=list(size=0.1,jitter=0.2))+stat_compare_means(comparisons = my_comparisons1)+theme(legend.position = 'none')
+```
+
+
+
+
+### 吸烟量与肿瘤标志物的关系
+
+```{r}
+cpd.biomark<-screening[,c('id','sex','smoking','baonian','cea','afp','ca125','ca153','ca199')]
+cpd.biomark.1<-subset(cpd.biomark,!is.na(baonian))
+cpd.biomark.2<-melt(cpd.biomark.1,id.vars=c('id','smoking','baonian','sex'),variable.name='biomark')
+cpd.biomark.2$smoking<-factor(cpd.biomark.2$smoking,levels = c(1,2,3),labels=c('Never','Current','ago'))
+head(cpd.biomark.2)
+```
+```{r,warning=FALSE}
+ggplot(data=subset(cpd.biomark.2,smoking!='Never'),aes(x=baonian,y=log(value)))+geom_point(alpha=0.5)+geom_smooth(method='lm')+facet_grid(smoking~biomark,scales='free',space='free')+
+  stat_cor(method='spearman',size=3)
+```
+```{r}
+ggplot(data=subset(cpd.biomark.2,smoking!='Never'),aes(x=baonian,y=log(value),color=sex))+geom_point(alpha=0.5)+geom_smooth(method='lm')+facet_grid(smoking~biomark,scales='free',space='free')+
+  stat_cor(method='spearman',size=3)
+```
+```{r}
+ggplot(data=subset(cpd.biomark.2,smoking!='Never' & biomark=='cea'),aes(x=baonian,y=log(value)))+geom_point(alpha=0.5)+geom_smooth(method='lm')+facet_grid(smoking~sex,scales='free',space='free')+
+  stat_cor(method='spearman',size=3)+labs(y='log(CEA)')
+```
+
+
+ ### BMI与肿瘤标志物水平的关系
+ 
+```{r}
+bmi.biomark<-screening[,c('id','sex','bmi','cea','ca125','ca153','ca199','afp')]
+bmi.biomark.1<-melt(bmi.biomark,id.vars=c('id','sex','bmi'),variable.name='biomark')
+head(bmi.biomark.1)
+```
+```{r warning=FALSE}
+ggplot(data=bmi.biomark.1,aes(x=bmi,y=log(value)))+geom_point()+geom_smooth(method = 'lm')+facet_wrap(~biomark,scales='free')
+```
+```{r warning=FALSE}
+bmi.table<-paste0('bmi',1:5)
+for(i in 1:5){
+  assign(bmi.table[i],ggscatter(screening, x = "bmi", y = biomark.table[i], add = "reg.line",conf.int = TRUE,
+                                    add.params = list(color = "blue", fill = "lightgray"),# Add confidence interval
+          cor.coef = TRUE, # Add correlation coefficient. see ?stat_cor
+          cor.coeff.args = list(method = "spearman", label.x = 40, label.sep = "\n"),cor.coef.size=3))
+}
+ggarrange(bmi1,bmi2,bmi3,bmi4,bmi5,ncol=3,nrow=2)
+```
+
+```{r warning=FALSE}
+ggplot(data=bmi.biomark.1,aes(x=bmi,y=log(value)))+geom_point()+geom_smooth(method = 'lm')+facet_grid(sex~biomark,scales='free',space='free')
+```
+```{r}
+screening$bmi_group[screening$bmi<18.5]<-1
+screening$bmi_group[screening$bmi>=18.5 & screening$bmi<24]<-2
+screening$bmi_group[screening$bmi>=24]<-3
+screening$bmi_group<-factor(screening$bmi_group,levels = c(1,2,3),labels=c('偏瘦','正常','超重'))
+```
+```{r}
+bmi_group.biomark<-screening[,c('id','sex','bmi_group','cea','afp','ca199','ca125','ca153')]
+bmi_group.biomark.1<-melt(bmi_group.biomark,id.vars=c('id','sex','bmi_group'),variable.name='biomark')
+bmi_group.biomark.1$value.log<-log(bmi_group.biomark.1$value)
+head(bmi_group.biomark.1)
+```
+```{r warning=FALSE}
+my_comparisons <- list(c("偏瘦", "正常"), c("正常", "超重"), c("偏瘦", "超重"))
+ggplot(data=bmi_group.biomark.1,aes(x=bmi_group,y=log(value)))+geom_boxplot()+facet_wrap(~biomark,scales='free')+stat_compare_means(comparisons=my_comparisons,line.size = 0.4)
+ 
+```
+```{r warning=FALSE}
+ggboxplot(bmi_group.biomark.1,x='bmi_group',y='value.log',add='jitter',color='bmi_group',palette='jco',add.params = list(size=0.1,jitter=0.2),facet.by='biomark',ylim=c(-2,11))+stat_compare_means(comparisons = my_comparisons,step.increase = 0.15)
+```
+
+
+```{r warning=FALSE}
+ps<-ggboxplot(bmi_group.biomark.1,x='bmi_group',y='value',add='jitter',facet.by = 'biomark',color='bmi_group')+stat_compare_means(comparisons=my_comparisons)
+ggpar(ps,yscale='log2')
+```
+
+ 
+ 
+ 
+ 
+ ### 女性生理与生育对肿瘤标志物的影响
+ 
+ #### 1.1 绝经状态对肿瘤标志物的影响
+```{r}
+menopause.biomark<-screening[,c('id','menopause','cea','afp','ca125','ca153','ca199')]
+menopause.biomark.1<-melt(menopause.biomark,id.vars=c('id','menopause'),variable.name='biomark')
+menopause.biomark.1$menopause<-factor(menopause.biomark.1$menopause,levels = c(1,2),labels = c('否','是'))
+head(menopause.biomark.1)
+```
+```{r warning=FALSE}
+ggplot(data=subset(menopause.biomark.1,!is.na(menopause)),aes(x=menopause,y=value,fill=menopause))+geom_boxplot()+facet_wrap(~biomark,scales='free')+scale_y_log10()+stat_compare_means(label = "p.signif", label.x = 1.5)+theme(legend.position = 'none')
+```
+#### 流产对肿瘤标志物的影响
+```{r warning=FALSE}
+pi1<-ggboxplot(subset(screening,!is.na(abortion)),x='abortion',y='ca125.1',add='jitter',color='abortion',palette = c("#00AFBB", "#E7B800"))
+pi2<-ggboxplot(subset(screening,!is.na(abortion)),x='abortion',y='ca153.1',add='jitter',color='abortion',palette = c("#00AFBB", "#E7B800"))
+pi3<-ggboxplot(subset(screening,!is.na(abortion)),x='abortion',y='ca199.1',add='jitter',color='abortion',palette = c("#00AFBB", "#E7B800"))
+pi4<-ggboxplot(subset(screening,!is.na(abortion)),x='abortion',y='cea.1',add='jitter',color='abortion',palette = c("#00AFBB", "#E7B800"))
+pi5<-ggboxplot(subset(screening,!is.na(abortion)),x='abortion',y='afp.1',add='jitter',color='abortion',palette = c("#00AFBB", "#E7B800"))
+ggarrange(pi1,pi2,pi3,pi4,pi5,ncol=3,nrow=2)
+```
+
+```{r warning=FALSE}
+pi1.1<-ggbarplot(subset(screening,!is.na(abortion)),x='abortion',y='ca125.1',add='median_iqr',color='abortion',palette = c("#00AFBB", "#E7B800"))+stat_compare_means()
+pi2.1<-ggbarplot(subset(screening,!is.na(abortion)),x='abortion',y='ca153.1',add='median_iqr',color='abortion',palette = c("#00AFBB", "#E7B800"))+stat_compare_means()
+pi3.1<-ggbarplot(subset(screening,!is.na(abortion)),x='abortion',y='ca199.1',add='median_iqr',color='abortion',palette = c("#00AFBB", "#E7B800"))+stat_compare_means()
+pi4.1<-ggbarplot(subset(screening,!is.na(abortion)),x='abortion',y='cea.1',add='median_iqr',color='abortion',palette = c("#00AFBB", "#E7B800"))+stat_compare_means()+theme(legend.position = 'none')
+pi5.1<-ggbarplot(subset(screening,!is.na(abortion)),x='abortion',y='afp.1',add='median_iqr',color='abortion',palette = c("#00AFBB", "#E7B800"))+stat_compare_means()+theme(legend.position = 'none')
+ggarrange(pi1.1,pi2.1,pi3.1,pi4.1,pi5.1,ncol=3,nrow=2)
+```
+
+
+#### 每周至少饮三次酒对肿瘤标志物的影响
+```{r}
+alcohol.biomark<-screening[,c('id','alcohol','cea','afp','ca125','ca199','ca153')]
+alcohol.biomark.1<-melt(alcohol.biomark,id.vars=c('id','alcohol'),variable.name='biomark')
+alcohol.biomark.1$alcohol<-factor(alcohol.biomark.1$alcohol,levels = c(1,2),labels=c('否','是'))
+head(alcohol.biomark.1)
+```
+
+
+
+```{r warning=FALSE}
+pm<-ggbarplot(screening, x="alcohol", y="ca125.1", add = "median_iqr",color='alcohol')+ 
+stat_compare_means()+theme(legend.position = 'none')+
+stat_compare_means(ref.group = "1", label = "p.signif")
+pm1<-ggbarplot(screening, x="alcohol", y="ca153.1", add = "median_iqr",color='alcohol')+ 
+stat_compare_means()+theme(legend.position = 'none')+
+stat_compare_means(ref.group = "1", label = "p.signif")
+pm2<-ggbarplot(screening, x="alcohol", y="cea.1", add = "median_iqr",color='alcohol')+ 
+stat_compare_means()+ 
+stat_compare_means(ref.group = "1", label = "p.signif")+theme(legend.position = 'none')
+pm3<-ggbarplot(screening, x="alcohol", y="afp.1", add = "median_iqr",color='alcohol')+ 
+stat_compare_means()+ 
+stat_compare_means(ref.group = "1", label = "p.signif")+theme(legend.position = 'none')
+pm4<-ggbarplot(screening, x="alcohol", y="ca199.1", add = "median_iqr",color='alcohol')+ 
+stat_compare_means()+ 
+stat_compare_means(ref.group = "1", label = "p.signif")+theme(legend.position = 'none')
+ggarrange(pm,pm1,pm2,pm3,pm4,ncol=3,nrow=2)
+```
+```{r warning=FALSE}
+po1<-ggviolin(screening, x="alcohol", y="ca125.1", fill = "alcohol", palette = c("#00AFBB", "#E7B800"), add = "boxplot", add.params = list(fill="white"))
+po2<-ggviolin(screening, x="alcohol", y="ca153.1", fill = "alcohol", palette = c("#00AFBB", "#E7B800"), add = "boxplot", add.params = list(fill="white"))
+po3<-ggviolin(screening, x="alcohol", y="cea.1", fill = "alcohol", palette = c("#00AFBB", "#E7B800"), add = "boxplot", add.params = list(fill="white"))
+po4<-ggviolin(screening, x="alcohol", y="afp.1", fill = "alcohol", palette = c("#00AFBB", "#E7B800"), add = "boxplot", add.params = list(fill="white"))+theme(legend.position = 'none')
+po5<-ggviolin(screening, x="alcohol", y="ca199.1", fill = "alcohol", palette = c("#00AFBB", "#E7B800"), add = "boxplot", add.params = list(fill="white"))+theme(legend.position = 'none')
+
+ggarrange(po1,po2,po3,po4,po5,ncol=3,nrow=2)
+
+```
+
+
+
+  
+ 
+ 
+ 
+ 
+ 
+ 
+       
+       
