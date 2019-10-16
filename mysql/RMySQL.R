@@ -4,7 +4,7 @@ library(stringr)
 library(ggpubr)
 #-------------------------------------MySQL数数据库连接---------------------------------------------------------------
 #cnn<-dbConnect(MySQL(),host='39.106.31.215',user='root',password='',dbname='screening')#与mysql进行连接
-cnn<-dbConnect(MySQL(),host='49.232.130.131',user='root',password='',dbname='screening')#与mysql进行连接
+cnn<-dbConnect(MySQL(),host='49.232.130.131',user='root',password='shengchao123',dbname='screening')#与mysql进行连接
 # dbListTables(cnn)#查看screening下的数据集
 # dbListFields(cnn,'biomarker')#查看字段
 #解决中文乱码问题
@@ -14,7 +14,7 @@ dbSendQuery(cnn,paste("SET names",encoding))
 biomark<-dbReadTable(cnn,'biomarker')#17+18+19的biomarker数据库
 biomark<-dbGetQuery(cnn,'SELECT id,name,AFP,CA199,CA153,CA125,CEA,PG1,PG2,PGR,HBsAg 
                     FROM biomarker WHERE year=2019;')#19年tumor marker数据
-biomark<-dbGetQuery(cnn,'SELECT id,name,sex,age,AFP,CA199,CA153,CA125,CEA,PG1,PG2,PGR,HBsAg 
+biomark<-dbGetQuery(cnn,'SELECT id,name,AFP,CA199,CA153,CA125,CEA,PG1,PG2,PGR,HBsAg 
                     FROM biomarker WHERE year=2019 and source="示范区";')#19年示范区tumor marker数据
 baseline<-dbReadTable(cnn,'baseline2019')
 baseline<-dbReadTable(cnn,'baseline')#读取17+18+19基线数据
