@@ -193,6 +193,10 @@ ggplot(d2, aes(x = age_group, y = perc*100, fill =PG1_range)) +
   theme_minimal(base_size = 14)+geom_text(aes(label=round(perc*100,2)),vjust=-2)
 v1<-d2%>%filter(!is.na(age_group))%>%ggbarplot(x='age_group',y='perc',fill='PG1_range',xlab='年龄组',ylab='百分比',label='perc',lab.pos = 'out',lab.vjust=-0.5,lab.size = 3,position=position_dodge(0.7))+theme(legend.title=element_blank())+
   scale_x_discrete(labels=c('40-44','45-49','50-54','55-59','60-64','65-79','70-74'))
+
+
+
+
 d3<-biomark5.5%>%filter(!is.na(PGR_range) & !is.na(PG1_range))%>%group_by(PG1_range,PGR_range) %>%
   summarise(count=n())
 d3$perp<-round((d3$count/6022)*100,2)
