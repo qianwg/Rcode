@@ -8,7 +8,9 @@ variables<-c("id","sex","age","race","marriag","educati","employm","occupat",
              "catpchil1","chil2age","catpchil2","smoking","quitsmkyrs","cpd","smkyrs","passivesmk",
              "psmkyrs","traffic","sleephrs","sleepquali","nightshift","sedentaryh","cellphoneh",
              "stress","agemenarch","menopause","agemenopau","deliver","delivertim","agefirdeli",
-             "breastfeed","brstfedmth","abortion","induabort","sponabort","oralcontra","hrt")
+             "breastfeed","brstfedmth","abortion","induabort","sponabort","oralcontra","hrt","breakfast","dalayeat","speedeat","outeat","exercise",
+             "heating","fuel","cookingfum","hometraffi","worktraffi","mask","airclean",
+             "lung_score.pad","breast_score.pad","liver_score.pad","gastric_score.pad","result")
 baseline[,variables]<-apply(baseline[,variables],2,as.numeric)
 variables2<-c('know1','know2','know3','know4','know5','know6','know7',
             'know8','know9','know10','know101','know102',
@@ -19,4 +21,4 @@ variables2<-c('know1','know2','know3','know4','know5','know6','know7',
             'know703','know704','know801','know802','know803','know804')
 baseline[,variables2]<-apply(baseline[,variables2],2,as.numeric)
 export(data,'C:/Users/dell/Desktop/癌症素养(赋值).xlsx')
-export(baseline,'~/合并文件2.xlsx')
+export(baseline,'~/PAD20127(赋值).xlsx')
