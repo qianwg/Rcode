@@ -12,8 +12,8 @@ cnn<-dbConnect(MySQL(),host='49.232.130.131',user='root',password='shengchao123'
 #解决中文乱码问题
 encoding <- if(grepl(pattern = 'utf8|utf-8',x = Sys.getlocale(),ignore.case = T)) 'utf8' else 'latin1'
 dbSendQuery(cnn,paste("SET names",encoding))
-#读取数据集biomark2019
-biomark<-dbReadTable(cnn,'biomarker')#17+18+19的biomarker数据库
+#读取数据集
+biomark<-dbGetQuery(cnn,'SELECT id,name,AFP,CA199,CEA FROM biomarker')#17+18+19的biomarker数据库
 biomark<-dbGetQuery(cnn,'SELECT id,name,AFP,CA199,CA153,CA125,CEA,PG1,PG2,PGR,HBsAg 
                     FROM biomarker WHERE year=2019;')#19年tumor marker数据
 biomark<-dbGetQuery(cnn,'SELECT id,name,AFP,CA199,CA153,CA125,CEA,PG1,PG2,PGR,HBsAg 
@@ -23,11 +23,13 @@ baseline<-dbReadTable(cnn,'baseline')#读取17+18+19基线数据
 #提取针对胃部肿瘤标志物相关研究的基线资料
 baseline<-dbGetQuery(cnn,'SELECT id,name,sex,age,disea14,disea15,disea16,disea17,disea18,disea19,disea20,disea22,disea23,disea28,disea29,disea30,disea31,
                           cancerfh,catpfath,catpmoth,catpbrot1,catpbrot2,catpsist1,catpsist2,catpchil1,catpchil2,
-                          smoking,quitsmkyrs,cpd,smkyrs,menopause,agemenopau FROM baseline2019 WHERE source="示范区";')
+                          smoking,quitsmkyrs,cpd,smkyrs,alcohol,menopause,agemenopau FROM baseline2019 WHERE source="示范区";')
 
 #读取baseline1718
 #dbClearResult(dbListResults(cnn)[[1]])#清空cnn的查询结果
 baseline1718<-dbGetQuery(cnn,'SELECT * FROM baseline WHERE year=2017 OR year=2018;')
+#读取所有baseline
+baseline<-dbGetQuery(cnn,'SELECT * FROM baseline;')
 #res<-dbSendQuery(cnn,'SELECT * FROM baseline WHERE year=2017 OR year=2018;')
 #baseline1718<-dbFetch(res,n=-1) #取所有的数据
 #dbClearResult(res)#清空res的查询
@@ -43,6 +45,7 @@ str_func<-function(x){
   return(b[2])
   }
 biomark1.1<-biomark%>%select(AFP,CA199,CA153,CA125,CEA,PG1,PG2,PGR,NSE,SCC,Fer)
+apply(biomark,2,str_func)#查看各个指标中的极大值数量
 apply(biomark1.1,2,str_func)#查看各个指标中的极大值数量
 #重新赋值极大值
 #1.将PG1＞200去除
@@ -95,10 +98,13 @@ apply(biomark1.1[,c('afp.pos','cea.pos','ca199.pos','ca125.pos','ca153.pos','PG.
 with(biomark1.1,table(area,postive))
 #----------------------------------------5.2019胃蛋白酶原基础性分析----------------------------------------------------------------------------
 #1.首先分析和排除极大值
-biomark5.1<-biomark%>%select(PG1,PG2,PGR)#脱敏6030
-apply(biomark5.1,2,str_func)#查看各个指标中的极大值数量
+biomark5.1<-biomark%>%select(id,name,PG1,PG2,PGR)#脱敏6030
+biomark5.1.2<-biomark5.1%>%filter(PG1!='>200.0')
+biomark5.1.2[,c('PG1','PG2','PGR')]<-data.frame(apply(biomark5.1.2[,c('PG1','PG2','PGR')],2,str_func2))
+summary(biomark5.1.2)
 #2.合并基线资料
 biomark5.2<-left_join(biomark,baseline,by=c('id','name'))
+biomark5.2<-left_join(biomark5.1.2,baseline,by=c('id','name'))
 #2.1基线资料分布
 #2.2男女分布
 biomark5.2$sex<-factor(biomark5.2$sex,levels = c(1,2),labels=c('男','女'))
@@ -361,6 +367,15 @@ y3<-gastroscogy%>%filter(gastroscogy!='',source=='示范区')%>%group_by(gastros
                         ylab='频数',xlab='胃镜检查结果',title='示范区',sort.val='desc',x.text.angle=50,label='freq',lab.pos = 'out')
 ggarrange(y2,y3)
 ggarrange(y1,y23,nrow=2)
+##PG与饮酒的关系
+biomark5.2$alcohol<-factor(biomark5.2$alcohol,levels = c(1,2),labels=c('否','是'))
+ggboxplot(data=subset(biomark5.2,!is.na(alcohol)),x='alcohol',y='PG1',add='jitter',palette='jco')+
+  stat_compare_means(method='wilcox.test',label='p.signif',label.x=1.5,size=4)
+#alcohol and ses
+ggboxplot(data=subset(biomark5.2,!is.na(alcohol)),x='alcohol',y='PG1',add='jitter',palette='jco',facet.by = 'sex')+
+  stat_compare_means(method='wilcox.test',label='p.signif',label.x=1.5,size=4)
+
+
 ##PG1<20的人群(严重萎缩的情况分布)
 gastroscogy2<-gastroscogy%>%filter(source=='示范区')
 gastroscogy_20<-inner_join(gastroscogy2,biomark5.2,by=c('id','name'))
@@ -395,17 +410,15 @@ s1<-ggbarplot(aaa1,x='gastroscogy',y='freq',fill='PG1_range',
    sort.by.groups=TRUE,position = position_dodge(),label = 'freq',lab.pos = 'out')+
   theme(legend.title = element_blank())
 ggarrange(y2,s1)
-#6----------------------------------------------17+18+19肿瘤标志物高危分布情况------------------------------------------------
+#6----------------------------------------------17+18+19基础肿瘤标志物高危分布情况------------------------------------------------
 biomark6.1<-biomark%>%select(CEA,AFP,CA199,CA153,CA125)
 biomark6.2<-data.frame(apply(biomark6.1,2,str_func2))
 summary(biomark6.2)
 risk<-function(x){
-  x2<-factor(x,levels = c(0,1,2,3,4,5),labels=c('正常','超出截值1-2倍','超出截值2-3倍','超出截值3-4倍','超出截值4倍-200','超过200'))
+  x2<-factor(x,levels = c(0,1,2,3,4,5),labels=c('正常','超出截值1-2倍','超出截值2-3倍','超出截值3-4倍','超出截值4倍'))
   return(x2)
 }
-
-
-  biomark6.3<-within(biomark6.2,{
+   biomark6.3<-within(biomark6.2,{
     CEA.risk<-vector()
     AFP.risk<-vector()
     CA199.risk<-vector()
@@ -416,48 +429,82 @@ risk<-function(x){
     CEA.risk[CEA>5 & CEA<=10]<-1
     CEA.risk[CEA>10 & CEA<=15]<-2
     CEA.risk[CEA>15 & CEA<=20]<-3
-    CEA.risk[CEA>20 & CEA<200]<-4
-    CEA.risk[CEA>=200]<-5
+    CEA.risk[CEA>20]<-4
     #AFP
     AFP.risk[AFP<=7]<-0
     AFP.risk[AFP>7 & AFP<=14]<-1
     AFP.risk[AFP>14 & AFP<=21]<-2
     AFP.risk[AFP>21 & AFP<=28]<-3
-    AFP.risk[AFP>28 & AFP<200]<-4
-    AFP.risk[AFP>=200]<-5
-    
+    AFP.risk[AFP>28]<-4
     #CA199
     CA199.risk[CA199<=27]<-0
     CA199.risk[CA199>27 & CA199<=27*2]<-1
     CA199.risk[CA199>27*2 & CA199<=27*3]<-2
     CA199.risk[CA199>27*3 & CA199<=27*4]<-3
-    CA199.risk[CA199>27*4 & CA199<200]<-4
-    CA199.risk[CA199>=200]<-5
-    
+    CA199.risk[CA199>27*4]<-4
     #CA153
     CA153.risk[CA153<=25]<-0
     CA153.risk[CA153>25 & CA153<=50]<-1
     CA153.risk[CA153>50 & CA153<=75]<-2
-    CA153.risk[CA153>75 & CA153<100]<-3
-    CA153.risk[CA153>=100 & CA153<200]<-4
-    CA153.risk[CA153>=200]<-5
+    CA153.risk[CA153>75 & CA153<=100]<-3
+    CA153.risk[CA153>100 ]<-4
     #CA125
     CA125.risk[CA125<=35]<-0
     CA125.risk[CA125>35 & CA125<=70]<-1
     CA125.risk[CA125>70 & CA125<=105]<-2
     CA125.risk[CA125>105 & CA125<=140]<-3
-    CA125.risk[CA125>140 & CA125<200]<-4
-    CA125.risk[CA125>=200]<-5
+    CA125.risk[CA125>140]<-4
   })
 biomark6.3[,c('CEA.risk','AFP.risk','CA199.risk','CA153.risk','CA125.risk')]<-apply(biomark6.3[,c('CEA.risk','AFP.risk','CA199.risk','CA153.risk','CA125.risk')],2,risk)
 table_risk<-as.data.frame(apply(biomark6.3[,c('CEA.risk','AFP.risk','CA199.risk','CA153.risk','CA125.risk')],2,table))
-table_risk
-export(table_risk,'~/基本肿瘤标志物分布.xlsx')
+table_risk1<-rbind(apply(table_risk,2,sum),table_risk)
+table_prop<-list()
+for(i in 1:5){
+  table_prop[[i]]<-round(table_risk1[,i]/table_risk1[1,i],4)*100
+}
+table_prop1<-data.frame(t(do.call(rbind,table_prop)))
+table<-list()
+for(i in 1:5){
+  table[[i]]<-paste(table_risk1[,i],'(',table_prop1[,i],'%)',sep='')
+}
+table2<-data.frame(t(do.call(rbind,table)))
+table3<-cbind(c('完成人数','<1倍上限','1-2倍上限',
+                '2-3倍上限','3-4倍上限','>4倍上限'),table2)
+names(table3)<-c('指标','CEA','AFP','CA199','CA153(女性)','CA125(女性)')
+ggtable<-ggtexttable(table3,rows=NULL,theme = ttheme('mBlue'))
+##--------------------------------------------CEA,AFP.CA199----------------------------------------
+#1 去除>号
+biomark[,c('AFP','CA199','CEA')]<-apply(biomark[,c('AFP','CA199','CEA')],2,str_func2)
+summary(biomark)
+#2 筛出大于节点值3倍以上的人群
+biomark7.1<-within(biomark,{
+  CEA.risk<-vector()
+  AFP.risk<-vector()
+  CA199.risk<-vector()
+  #CEA
+  CEA.risk[CEA<=5]<-0
+  CEA.risk[CEA>5 & CEA<=10]<-1
+  CEA.risk[CEA>10 & CEA<=15]<-2
+  CEA.risk[CEA>15 & CEA<=20]<-3
+  CEA.risk[CEA>20]<-4
+  #AFP
+  AFP.risk[AFP<=7]<-0
+  AFP.risk[AFP>7 & AFP<=14]<-1
+  AFP.risk[AFP>14 & AFP<=21]<-2
+  AFP.risk[AFP>21 & AFP<=28]<-3
+  AFP.risk[AFP>28]<-4
+  #CA199
+  CA199.risk[CA199<=27]<-0
+  CA199.risk[CA199>27 & CA199<=27*2]<-1
+  CA199.risk[CA199>27*2 & CA199<=27*3]<-2
+  CA199.risk[CA199>27*3 & CA199<=27*4]<-3
+  CA199.risk[CA199>27*4]<-4
 
-
-
-
-
+})
+apply(biomark7.1[,c('AFP.risk','CA199.risk','CEA.risk')],2,table)
+biomark7.2<-biomark7.1%>%filter(AFP.risk>=3 | CA199.risk>=3 | CEA.risk>=3)
+biomark7.3<-left_join(biomark7.2,baseline,by=c('id','name'))
+export(biomark7.3,'~/screening/肿瘤标志物高危17-19.xlsx')
 
 
 
