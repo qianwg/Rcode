@@ -55,7 +55,7 @@ biomark1.3<-data.frame(apply(biomark1.2,2,str_func2))
 # rm(biomark2)
 summary(biomark3)
 #-------------------------------------------趋势性检验--------------------------------------------------------
-##linear-by-linear test for  contingency tables
+##linear-by-linear test for  contingency table
 
 
 
