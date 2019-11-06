@@ -122,6 +122,18 @@ shinyServer(function(input, output) {
             summary(family_value(),maxsum=99)
             }
     })
+    #sav转excel
+    output$download3 <- downloadHandler(
+      filename = function(){
+        
+        paste(gsub("*.sav$", "", input$file),".xlsx", sep = "")
+      },
+      content = function(file) {
+        data<-dataset()
+        openxlsx::write.xlsx(data,file)
+        
+      }
+    )
     #自建问卷评价函数
     questionare<-function(data){
         #data<-data.frame(apply(data,2,function(x){
@@ -274,8 +286,9 @@ shinyServer(function(input, output) {
         check3536<-ifelse(check34==1 | check35==1 | check36==1,1,0)#合并职业暴露方面的错误
         #5.女性生理与生育方面
         check37_1<-ifelse(sex==2,ifelse(!is.na(agemenarch) & !is.na(menopause) & !is.na(deliver) & menopause>=1 & menopause<=2 & deliver>=1 & deliver<=2,0,1),0)
-        check37_2<-ifelse(sex==2,ifelse(abortion==2,ifelse(induabort>10 | sponabort>10,1,0),0),0)
-        check37<-ifelse(check37_1==0 & check37_2==0,0,1)
+        check37_2<-ifelse(sex==2,ifelse(!is.na(abortion),ifelse(abortion==2,ifelse(induabort>10 | sponabort>10,1,ifelse(is.na(induabort) & is.na(sponabort),1,0)),0),1),0)#有问题，存在缺失值
+        check37_3<-ifelse(is.na(check37_2),0,check37_2)
+        check37<-ifelse(check37_1==0 & check37_3==0,0,1)
         check38<-ifelse(sex==1 & !is.na(agemenarch) & !is.na(sex),1,0)
         check39<-ifelse(!is.na(sex) & sex==2 & agemenarch>0 & agemenarch<99 & agemenarch>age & !is.na(agemenarch) & !is.na(age),1,0)
         check40_2<-ifelse(sex==2,ifelse(menopause==2,ifelse(agemenopau>5 & agemenopau<=age,0,1),0),0)
