@@ -11,6 +11,7 @@ shinyUI(dashboardPage(
         numericInput(inputId = "id",
                      "ID",21010001,21010001,22063000),
         menuItem("搜素ID结果",tabName = "resultID",icon=icon("th")),
+        downloadButton("download3", "to excel"),
         menuItem(text = "高危人群筛选", icon = icon("refresh"), href = "http://39.106.31.215:3838/risk2019/")
         
         
