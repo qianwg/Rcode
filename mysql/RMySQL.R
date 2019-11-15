@@ -415,7 +415,7 @@ biomark6.1<-biomark%>%select(CEA,AFP,CA199,CA153,CA125)
 biomark6.2<-data.frame(apply(biomark6.1,2,str_func2))
 summary(biomark6.2)
 risk<-function(x){
-  x2<-factor(x,levels = c(0,1,2,3,4,5),labels=c('正常','超出截值1-2倍','超出截值2-3倍','超出截值3-4倍','超出截值4倍'))
+  x2<-factor(x,levels = c(0,1,2,3,4),labels=c('正常','超出截值1-2倍','超出截值2-3倍','超出截值3-4倍','超出截值4倍'))
   return(x2)
 }
    biomark6.3<-within(biomark6.2,{
