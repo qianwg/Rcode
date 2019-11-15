@@ -153,7 +153,7 @@ shinyServer(function(input, output) {
         check7_2<-ifelse(cellphone==0 & telephone==0,1,0)
         check7<-ifelse(check7_1==1 | check7_2==1,1,0)
         check8<-ifelse(!is.na(marriag),ifelse(marriag>=1 & marriag<=4,0,1),1)
-        check9<-ifelse(!is.na(educati) & educati>=1 & educati<=6,0,1)
+        check9<-ifelse(!is.na(educati) &  educati>=1 & educati<=6,0,1)
         check10<-ifelse(!is.na(employm) & employm>=1 & employm<=4,0,1)
         check11<-ifelse(!is.na(occupat),0,ifelse(employm==4,0,1))
         check12<-ifelse(!is.na(income) & income>=1 & income<=4,0,1)
