@@ -37,12 +37,12 @@ shinyServer(function(input, output) {
     lung_age<-ifelse(age>=55,1,0)
     #3.曾患或现患：弥漫性肺间质纤维化，肺结核，慢性支气管炎，肺气肿，哮喘支气管扩张，矽肺或尘肺
     #（1个1分，2个2分，≥3个3分）
-    disea_1<-ifelse(disea1==2,1,0)
-    disea_2<-ifelse(disea2==2,1,0)
-    disea_3<-ifelse(disea3==2,1,0)
-    disea_4<-ifelse(disea4==2,1,0)
-    disea_5<-ifelse(disea5==2,1,0)
-    disea_6<-ifelse(disea6==2,1,0)
+    disea_1<-ifelse(is.na(disea1),0,ifelse(disea1==2,1,0))
+    disea_2<-ifelse(is.na(disea2),0,ifelse(disea2==2,1,0))
+    disea_3<-ifelse(is.na(disea3),0,ifelse(disea3==2,1,0))
+    disea_4<-ifelse(is.na(disea4),0,ifelse(disea4==2,1,0))
+    disea_5<-ifelse(is.na(disea5),0,ifelse(disea5==2,1,0))
+    disea_6<-ifelse(is.na(disea6),0,ifelse(disea6==2,1,0))
     lung_disea<-disea_1+disea_2+disea_3+disea_4+disea_5+disea_6
     lung_disea_score<-ifelse(lung_disea>=3,3,lung_disea)
     #4.特殊职业暴露（石棉，镉，镍，砷，氡，X射线等）（1个1分，≥2个2分）
@@ -55,9 +55,9 @@ shinyServer(function(input, output) {
     lung_occuexpo<-occuexpo_1+occuexpo_2+occuexpo_3+occuexpo_4+occuexpo_5+occuexpo_6
     lung_occuexpo_score<-ifelse(lung_occuexpo>=2,2,lung_occuexpo)
     #5.被动吸烟(每周≥1天，每天≥15分钟)≥10年（1分）
-    lung_passivesmk<-ifelse(passivesmk==2 & psmkyrs>=10 & psmkyrs<99,1,0)
+    lung_passivesmk<-ifelse(is.na(passivesmk) | is.na(psmkyrs),0,ifelse(passivesmk==2 & psmkyrs>=10 & psmkyrs<99,1,0))
     #6.重度精神问题并接受治疗3个月（1分）
-    lung_stress<-ifelse(stress==2,1,0)
+    lung_stress<-ifelse(is.na(stress),0,ifelse(stress==2,1,0))
     #7.吸烟状况
     #（1）从不吸烟（0分）
     #（2）吸烟<20包年 a)目前已戒烟，且戒烟大于15年（1分）
@@ -69,6 +69,8 @@ shinyServer(function(input, output) {
     #                 c)目前仍在吸烟（5分）
     lung_smoking_score<-vector()
     lung_smoking_score[data$smoking==1]<-0
+    lung_smoking_score[data$smoking==2 & is.na(data$baonian)]<-0
+    lung_smoking_score[data$smoking==3 & is.na(data$baonian)]<-0
     lung_smoking_score[data$smoking==2 & data$baonian<20]<-3
     lung_smoking_score[data$smoking==2 & data$baonian>=20]<-5
     lung_smoking_score[data$smoking==3 & data$baonian<20 & data$quitsmkyrs>15 & data$quitsmkyrs<99]<-1
@@ -90,9 +92,9 @@ shinyServer(function(input, output) {
                        breast_sist1+breast_sist2+breast_chil1+breast_chil2)
     breast_family<-ifelse(breast_family1>=15,15,breast_family1)
     #2.曾患或现患：乳腺小叶不典型增生，乳腺导管不典型增生，或乳腺小叶原位癌（每个1分）
-    disea_25<-ifelse(sex==2 & disea25==2,1,0)
-    disea_26<-ifelse(sex==2 & disea26==2,1,0)
-    disea_27<-ifelse(sex==2 & disea27==2,1,0)
+    disea_25<-ifelse(is.na(disea25),0,ifelse(sex==2 & disea25==2,1,0))
+    disea_26<-ifelse(is.na(disea26),0,ifelse(sex==2 & disea26==2,1,0))
+    disea_27<-ifelse(is.na(disea27),0,ifelse(sex==2 & disea27==2,1,0))
     breast_disea<-disea_25+disea_26+disea_27
     #3.具有以下两项或更多着（0-1个0分，≥2个每个1分）
     #(1)年龄≥50岁     (2)初潮年龄<13岁
@@ -113,7 +115,7 @@ shinyServer(function(input, output) {
     breast_risk9<-ifelse(!is.na(hrt),ifelse(sex==2 & hrt==2,1,0),0)
     breast_risk10<-ifelse(abortion==2 & sex==2,ifelse(induabort>=2 & !is.na(induabort),1,0),0)
     breast_risk11<-ifelse(!is.na(bmi),ifelse(sex==2 & bmi>=28,1,0),0)
-    breast_risk12<-ifelse(sex==2 & stress==2,1,0)
+    breast_risk12<-ifelse(is.na(stress),0,ifelse(sex==2 & stress==2,1,0))
     breast_risk<-breast_risk1+breast_risk2+breast_risk3+breast_risk4+breast_risk5+breast_risk6+
       breast_risk7+breast_risk8+breast_risk9+breast_risk10+breast_risk11+breast_risk12
     breast_risk_score<-ifelse(breast_risk>=2,breast_risk,0)
@@ -133,9 +135,9 @@ shinyServer(function(input, output) {
                       liver_sist1+liver_sist2+liver_chil1+liver_chil2)
     liver_family<-ifelse(liver_family1>=15,15,liver_family1)
     #2.疾病史,曾患肝硬化、慢性乙型肝炎、慢性丙型肝炎（每个1分）
-    disea_10<-ifelse(disea10==2,1,0)
-    disea_11<-ifelse(disea11==2,1,0)
-    disea_12<-ifelse(disea12==2,1,0)
+    disea_10<-ifelse(is.na(disea10),0,ifelse(disea10==2,1,0))
+    disea_11<-ifelse(is.na(disea11),0,ifelse(disea11==2,1,0))
+    disea_12<-ifelse(is.na(disea12),0,ifelse(disea12==2,1,0))
     liver_disea_score<-disea_10+disea_11+disea_12
     #3.具有以下两项或更多者(0-1个0分，≥2个每个1分，其中第五个最多2分)
     #（1）男性年龄≥40岁   （2）女性年龄≥50岁
@@ -146,16 +148,16 @@ shinyServer(function(input, output) {
     #（7）重度精神问题并接受治疗≥3个月
     liver_risk1<-ifelse(sex==1 & age>=40,1,0)
     liver_risk2<-ifelse(sex==2 & age>=50,1,0)
-    liver_risk3<-ifelse(alcohol==2,1,0)
-    liver_risk4<-ifelse(chloroethy==2,1,0)
-    liver_risk5_1<-ifelse(disea9==2,1,0)
-    liver_risk5_2<-ifelse(disea13==2,1,0)
-    liver_risk5_3<-ifelse(disea7==2,1,0)
-    liver_risk5_4<-ifelse(disea8==2,1,0)
+    liver_risk3<-ifelse(is.na(alcohol),0,ifelse(alcohol==2,1,0))
+    liver_risk4<-ifelse(is.na(chloroethy),0,ifelse(chloroethy==2,1,0))
+    liver_risk5_1<-ifelse(is.na(disea9),0,ifelse(disea9==2,1,0))
+    liver_risk5_2<-ifelse(is.na(disea13),0,ifelse(disea13==2,1,0))
+    liver_risk5_3<-ifelse(is.na(disea7),0,ifelse(disea7==2,1,0))
+    liver_risk5_4<-ifelse(is.na(disea8),0,ifelse(disea8==2,1,0))
     liver_risk5_1234<-liver_risk5_1+liver_risk5_2+liver_risk5_3+liver_risk5_4
     liver_risk5<-ifelse(liver_risk5_1234>=2,2,liver_risk5_1234)
     liver_risk6<-ifelse(bmi>=28,1,0)
-    liver_risk7<-ifelse(stress==2,1,0)
+    liver_risk7<-ifelse(is.na(stress),0,ifelse(stress==2,1,0))
     liver_risk<-liver_risk1+liver_risk2+liver_risk3+liver_risk4+liver_risk5+liver_risk6+liver_risk7
     liver_risk_score<-ifelse(liver_risk>=2,liver_risk,0)
     #4.具有以下三种或更多特殊饮食偏好（1-2个0分，3个1分，≥4个2分）
@@ -190,11 +192,11 @@ shinyServer(function(input, output) {
                         gastric_sist1+gastric_sist2+gastric_chil1+gastric_chil2)
     gastric_family<-ifelse(gastric_family1>=15,15,gastric_family1)
     #2.疾病史，曾患或现患：胃溃疡、幽门螺旋杆菌、胃粘膜异性或不典型增生、残胃、肠上皮化生（每个1分）
-    disea_18<-ifelse(disea18==2,1,0)
-    disea_20<-ifelse(disea20==2,1,0)
-    disea_22<-ifelse(disea22==2,1,0)
-    disea_24<-ifelse(disea24==2,1,0)
-    disea_23<-ifelse(disea23==2,1,0)
+    disea_18<-ifelse(is.na(disea18),0,ifelse(disea18==2,1,0))
+    disea_20<-ifelse(is.na(disea18),0,ifelse(disea20==2,1,0))
+    disea_22<-ifelse(is.na(disea18),0,ifelse(disea22==2,1,0))
+    disea_24<-ifelse(is.na(disea18),0,ifelse(disea24==2,1,0))
+    disea_23<-ifelse(is.na(disea18),0,ifelse(disea23==2,1,0))
     gastric_disea_score<-disea_18+disea_20+disea_22+disea_24+disea_23
     #3.具有以下两项或等多者（0-1个0分，≥2个每个1分，其中第3个最多2分）
     #（1）年龄≥55岁
@@ -205,16 +207,16 @@ shinyServer(function(input, output) {
     #（5）重度精神问题并接受≥3个月治疗（18年没有）
     gastric_risk1<-ifelse(age>=55,1,0)
     gastric_risk2<-ifelse(!is.na(baonian),ifelse(baonian>=20,1,0),0)
-    gastric_risk3_1<-ifelse(disea17==2,1,0)
-    gastric_risk3_2<-ifelse(disea19==2,1,0)
-    gastric_risk3_3<-ifelse(disea21==2,1,0)
-    gastric_risk3_4<-ifelse(disea14==2,1,0)
-    gastric_risk3_5<-ifelse(disea15==2,1,0)
-    gastric_risk3_6<-ifelse(disea16==2,1,0)
+    gastric_risk3_1<-ifelse(is.na(disea17),0,ifelse(disea17==2,1,0))
+    gastric_risk3_2<-ifelse(is.na(disea19),0,ifelse(disea19==2,1,0))
+    gastric_risk3_3<-ifelse(is.na(disea21),0,ifelse(disea21==2,1,0))
+    gastric_risk3_4<-ifelse(is.na(disea14),0,ifelse(disea14==2,1,0))
+    gastric_risk3_5<-ifelse(is.na(disea15),0,ifelse(disea15==2,1,0))
+    gastric_risk3_6<-ifelse(is.na(disea16),0,ifelse(disea16==2,1,0))
     gastric_risk3_7<-gastric_risk3_1+gastric_risk3_2+gastric_risk3_3+gastric_risk3_4+gastric_risk3_5+gastric_risk3_6
     gastric_risk3<-ifelse(gastric_risk3_7>=2,2,gastric_risk3_7)
     gastric_risk4<-ifelse(bmi>=28,1,0)
-    gastric_risk5<-ifelse(stress==2,1,0)
+    gastric_risk5<-ifelse(is.na(stress),0,ifelse(stress==2,1,0))
     gastric_risk<-gastric_risk1+gastric_risk2+gastric_risk3+gastric_risk4+gastric_risk5
     gastric_risk_score<-ifelse(gastric_risk>=2,gastric_risk,0)
     #gastric_risk5
