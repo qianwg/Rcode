@@ -6,7 +6,7 @@ risk_function<-function(data){
                        ifelse(data$smoking==3,(data$cpd*data$smkyrs)/20,0))
   data$bmi<-data$weight/((data$height/100)^2)
   attach(data)
-  #-----------------------------------------------------共同因素-----------------------------------------------------
+  #------------------------------------------------------共同因素-----------------------------------------------------
   #家族史函数
   family_sum<-function(x){
     x1<-sort(x,decreasing = TRUE)
