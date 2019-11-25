@@ -33,7 +33,7 @@ plot1<-facet(ggbarplot(data=subset(cancer_score,!is.na(score)),x='score',xlab=''
 table<-data.frame(t(apply(score[,c("lung_score",'breast_score','liver_score','gastric_score')],2,percent_value)))
 table2<-cbind(c('lung_score','breast_score',
                 'liver_score','gastric_score'),table)
-names(table2)<-c('percent','1%','2.5%','5%','10%','25%','50%','75%','90%','95%','97.5','98%','99%')
+names(table2)<-c('percent','1%','2.5%','5%','10%','25%','50%','75%','90%','95%','97%','97.5','98%','99%')
 ggtable<-ggtexttable(table2,rows=NULL,theme = ttheme('mBlue'))
 ggarrange(plot1,ggtable,nrow=2,widths=c(1,20),heights=c(1,0.25))
 
