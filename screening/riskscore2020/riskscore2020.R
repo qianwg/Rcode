@@ -255,8 +255,9 @@ percent_value<-function(x){
   p75<-round(quantile(x,0.75,na.rm=TRUE),2)
   p90<-round(quantile(x,0.9,na.rm=TRUE),2)
   p95<-round(quantile(x,0.95,na.rm=TRUE),2)
+  p97<-round(quantile(x,0.97,na.rm=TRUE),2)
   p97.5<-round(quantile(x,0.975,na.rm=TRUE),2)
   p98<-round(quantile(x,0.98,na.rm=TRUE),2)
   p99<-round(quantile(x,0.99,na.rm=TRUE),2)
-  table<-c(p1,p2.5,p5,p10,p25,p50,p75,p90,p95,p97.5,p98,p99)
+  table<-c(p1,p2.5,p5,p10,p25,p50,p75,p90,p95,p97,p97.5,p98,p99)
 }
