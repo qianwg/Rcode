@@ -10,7 +10,7 @@ export(screening2,'~/20年风险评分.xlsx')
 score<-screening2[,199:220]
 names(score)
 rm(screening2)
-#common_risk------>check
+#common_risk------->check
 gghistogram(data=score,x='common_risk',y='..density..',bins=39)
 #family
 family<-score[,c("lung_family",'breast_family','liver_family','gastric_family')]%>%
