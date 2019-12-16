@@ -159,7 +159,7 @@ risk_function<-function(data){
   #(4)未哺乳或哺乳时间<6个月   (5)口服避孕药3次或以上
   #(6)使用激素替代治疗半年或以上
   #(7)人工流产2次或更多
-  breast_risk1<-ifelse(!is.na(agemenarch),ifelse(sex==2 & agemenarch<13,1,0),0)
+  breast_risk1<-ifelse(!is.na(agemenarch),ifelse(sex==2 & agemenarch<13 & agemenarch>0,1,0),0)
   breast_risk2<-ifelse(!is.na(agemenopau),ifelse(sex==2 & agemenopau>=55 & menopause==2 & agemenopau<99,1,0),0)
   breast_risk3<-ifelse(!is.na(deliver),ifelse(sex==2 & deliver==1,1,0),0)
   breast_risk4<-ifelse(!is.na(deliver),ifelse(sex==2 & agefirdeli>30 & deliver==2 & agefirdeli<99,1,0),0)
