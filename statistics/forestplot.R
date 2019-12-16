@@ -1,7 +1,7 @@
 #install.packages("forestplot")
 library(forestplot)
-rs_forest <- read.csv('~/data/figure1.csv',header = FALSE)
-# tiff('Figure 1.tiff',height = 6000,width = 7000,res= 600)
+rs_forest <- read.csv('~/data/fig3_U.csv',header = FALSE)
+#tiff('~/Figure 1.tiff',height = 6000,width = 7000,res= 600)
 forestplot(labeltext = as.matrix(rs_forest[,1:5]),
            mean = rs_forest$V6, #设置均值
            lower = rs_forest$V7, #设置均值的lowlimits限
@@ -13,7 +13,7 @@ forestplot(labeltext = as.matrix(rs_forest[,1:5]),
            xticks=c(0.01,1,5,15,30),
            #clop=c(0.01,30),
            xlog=TRUE,
-           lineheight = unit(8,'mm'),#设置图形中的行距
+           lineheight = unit(5,'mm'),#设置图形中的行距
            colgap = unit(2,'mm'),#设置图形中的列间距
            lwd.zero = 2,#设置参考线的粗细
            lwd.ci = 2,#设置区间估计线的粗细
@@ -22,4 +22,7 @@ forestplot(labeltext = as.matrix(rs_forest[,1:5]),
            xlab="The estimates",#设置x轴标签
            lwd.xaxis=2,#设置X轴线的粗细
            lty.ci = "solid",
-           graph.pos = 5)#设置森林图的位置，此处设置为4，则出现在第四列
+           graph.pos = 5,#设置森林图的位置，此处设置为4，则出现在第四列
+           line.margin = 0.1
+           )
+
