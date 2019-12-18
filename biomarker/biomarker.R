@@ -5,6 +5,7 @@ library(ggpubr)
 library(table1)
 library(tidyverse)
 library(fmsb)
+library(stargazer)
 biomarker<-read.xlsx('~/data/biomarker/Biomarker+baseline(2017+18+19).xlsx',detectDates=TRUE)
 #CEA ADN afp and ca199 --1000 =   >1000
 #CA153 300---=>300
@@ -12,6 +13,7 @@ biomarker<-read.xlsx('~/data/biomarker/Biomarker+baseline(2017+18+19).xlsx',dete
 #PG2 ---100 =   >100
 #PGR ---90  =   >3
 #-----------------------------------------------变量操作-----------------------------------------------
+source('~/Rcode/statistics/derout.R')
 #age
 biomarker$age_group[biomarker$age>=40 & biomarker$age<45]<-1
 biomarker$age_group[biomarker$age>=45 & biomarker$age<50]<-2
@@ -26,6 +28,11 @@ biomarker$age_group2[biomarker$age>=60 & biomarker$age<70]<-3
 biomarker$age_group2[biomarker$age>=70]<-4
 #baonian
 biomarker$baonian<-(biomarker$cpd*biomarker$smkyrs)/20
+#--1包年缺失值查看
+summary(biomarker[which(biomarker$smoking>1),'baonian'])
+#--2baonian极端值查看
+outlier_func(x=biomarker$baonian,id=biomarker$ID_BLAST)
+#--检查或剔除极端值或缺失值
 #---BMI
 biomarker$bmi<-with(biomarker,weight/((height/100)^2))
 biomarker$bmi_group<-with(biomarker,case_when(
@@ -35,17 +42,30 @@ biomarker$bmi_group<-with(biomarker,case_when(
       bmi>=28 ~ 4
 ))
 biomarker$bmi_group2<-with(biomarker,ifelse(bmi<25,1,2))
+#CEA(数值型时，将CEA>200的去除)
+biomarker$CEA.group<-ifelse(biomarker$CEA<=5,1,2)
+#极端值
+outlier_func(biomarker2$CEA,biomarker2$ID_BLAST)
+#AFP(数值型时，将AFP>250的去除)
+outlier_func(biomarker$AFP,biomarker$ID_BLAST)
+#CA199(数值型时，将CA199>250的去除)
+outlier_func(biomarker$CA199,biomarker$ID_BLAST)
+#CA125(数值型时，将CA125>100的去除)
+outlier_func(biomarker$CA125,biomarker$ID_BLAST)
+#CA153(数值型时，将CA153>100的去除)
+outlier_func(biomarker$CA153,biomarker$ID_BLAST)
 #BMI极端值查看
 summary(biomarker$bmi)
 gghistogram(biomarker,x='bmi',bins=30)+coord_cartesian(ylim=c(0,50))
-biomarker%>%select(ID_BLAST,bmi,bmi_group)%>%transmute(id=ID_BLAST,bmi=bmi,bmi_group,
-                      is_outlier=ifelse(is_outlier(bmi),bmi,as.numeric(NA)))%>%
-  transmute(id=ifelse(is.na(is_outlier),NA,id),bmi=bmi,bmi_group=factor(bmi_group),is_outlier)%>%filter(!is.na(bmi_group))%>%
-  ggboxplot(x='bmi_group',y='bmi',fill='bmi_group',palette = 'jco')+geom_text(aes(label=id),nudge_y = 0.05,na.rm = TRUE)+theme(legend.position = 'none')
-biomarker%>%select(ID_BLAST,bmi,bmi_group)%>%transmute(id=ID_BLAST,bmi=bmi,bmi_group,
-    is_outlier=ifelse(is_outlier(bmi),bmi,as.numeric(NA)))%>%
-  transmute(id=ifelse(is.na(is_outlier),NA,id),bmi=bmi,bmi_group=factor(bmi_group),is_outlier)%>%filter(!is.na(bmi_group))%>%
-group_by(bmi_group)%>%summarise(na_n=sum(!is.na(is_outlier)))
+outlier_func(biomarker$bmi,biomarker$ID_BLAST)
+biomarker2<-within(biomarker,
+                   {CEA<-ifelse(CEA>100,NA,CEA)
+                   AFP<-ifelse(AFP>250,NA,AFP)
+                   CA199<-ifelse(CA199>250,NA,CA199)
+                   CA125<-ifelse(CA125>100,NA,CA125)
+                   CA153<-ifelse(CA153>100,NA,CA153)}
+                   )
+  
 
 ##------------------------------CEA/AFP/CA125/CA153/CA199节点值分布---------------------------------------
 str(biomarker[,c('AFP','CA199','CA125','CEA','CA153')])
@@ -371,9 +391,9 @@ agostino.test(biomarker$CA153)
 agostino.test(biomarker$CEA)
 agostino.test(biomarker$AFP)
 #------------------------------------------肿瘤标志物在吸烟状态间的分布-------------------------------------
-biomarker_baseline6<-biomarker%>%select(AFP,CA125,CA153,CEA,CA199,smoking,cpd,smkyrs)%>%
+biomarker_baseline6<-biomarker%>%select(AFP,CA125,CA153,CEA,CA199,smoking,baonian)%>%
   transmute(smoking=factor(smoking,labels=c('Never','Current','Ago')),
-            baonian=(cpd*smkyrs)/20,
+            baonian=baonian,
             CEA=CEA,AFP=AFP,CA199=CA199,CA153=CA153,CA125=CA125)
 
 biomarker_baseline6%>%pivot_longer(cols=c('CEA','AFP','CA199','CA125','CA153'),names_to = 'marker',values_to = 'value')%>%
@@ -386,14 +406,12 @@ biomarker%>%select(smoking,sex,baonian,age)%>%filter(!is.na(smoking))%>%group_by
 
 
 #(1)CEA
-biomarker$CEA.group<-ifelse(biomarker$CEA<=5,1,2)
 biomarker.smoking<-biomarker%>% filter(!is.na(smoking))%>%select(smoking,CEA,sex,CEA.group,age,age_group2)%>%transmute(
                                                 smoking=factor(smoking,levels=c(1,2,3,4),labels=c('Never','Current','Ago','P-value')),
                                                 CEA=log(CEA),sex=factor(sex,labels=c('man','woman')),
                                                 CEA.group=factor(CEA.group,labels=c('negative','positive')),
                                                 age.group=factor(age_group2),age=age)
  
-head(biomarker.smoking)
 biomarker.smoking%>%ggboxplot(x='smoking',y='CEA',add='jitter',add.params = list(size=0.1,alpha=0.4),ylab='log(CEA)')+
   stat_compare_means(comparisons = list(c('Never','Current'),c('Never','Ago'),c('Current','Ago')),label='p.signif'
                      )+stat_compare_means(label.y=10)+border()
@@ -448,15 +466,18 @@ plot.baonian4<-biomarker_baonian%>%filter(!is.na(CEA3) & !is.na(baonian3))%>%
   theme(legend.title=element_blank(),legend.position = 'top')+labs(x='baonian',y='percent')
 ggarrange(plot.baonian2,plot.baonian3,plot.baonian4,nrow=1)
 #吸烟状态与年龄对CEA的影响
-biomarker%>%transmute(age=age,CEA=log(CEA),smoking=factor(smoking,labels=c('Never','Current','Ago')))%>%filter(!is.na(smoking) & !is.na(age))%>%
+biomarker2%>%transmute(age=age,CEA=log(CEA),smoking=factor(smoking,labels=c('Never','Current','Ago')))%>%filter(!is.na(smoking) & !is.na(age))%>%
   ggscatter(x='age',y='CEA',color='smoking',palette = 'jco',add='reg.line')+theme(legend.position = 'none')+border()
-
-
-biomarker%>%transmute(age=factor(age_group),CEA=CEA,CEA2=ifelse(CEA>quantile(CEA,na.rm=T)[4]+IQR(CEA,na.rm = T)*1.5,NA,CEA),
-                      smoking=factor(smoking,labels=c('Never','Current','Ago')))%>%filter(!is.na(smoking) & !is.na(age))%>%
-  summarise()
-  
-
+#同时矫正年龄与性别
+biomarker2$sex<-factor(biomarker2$sex,labels=c('man','woman'))
+biomarker2$smoking<-factor(biomarker2$smoking,labels=c('Never','Current','Ago'))
+model1<-lm(CEA~age,data=biomarker2)
+model2<-lm(CEA~sex,data=biomarker2)
+model3<-lm(CEA~smoking,data=biomarker2)
+model4<-lm(CEA~age+factor(sex)+relevel(smoking,ref='Never'),data=biomarker2)
+stargazer(model4,title='results',align=TRUE,type='latex',
+          no.space = TRUE,omit.stat = c('LL','res.dev','ser','f'),
+          covariate.labels = c('Age','woman','Current','Ago','Constant'))
 #吸烟人群中包年与年龄的关系
 #1
 plot_baonian1<-biomarker%>%transmute(age=age,baonian=baonian)%>%
@@ -480,6 +501,23 @@ biomarker%>%select(sex,smoking,quitsmkyrs,CEA)%>%transmute(sex=sex,smoking=smoki
           CEA=ifelse(CEA>quantile(CEA,na.rm=T)[4]+IQR(CEA,na.rm = T)*1.5,NA,CEA))%>%
   filter(smoking==3,sex==1)%>%
   ggscatter(x='quitsmkyrs',y='CEA',add='reg.line')+stat_cor(method='spearman')
+#戒烟一年以内与正在吸烟的人群相比
+biomarker2%>%filter(smoking==3)%>%select(CEA,quitsmkyrs)%>%ggscatter(x='quitsmkyrs',y='CEA',add='reg.line',add.params = list(color='red'))+
+  stat_cor(color='red')+scale_x_continuous(limits=c(0,40))
+biomarker2%>%select(CEA,smoking,quitsmkyrs)%>%
+  transmute(
+    CEA=CEA,CEA2=ifelse(CEA>quantile(CEA,na.rm=T)[4]+IQR(CEA,na.rm = T)*1.5,NA,CEA),group=case_when(
+      smoking==3 & quitsmkyrs<=1 ~ 3,
+      smoking==3 & quitsmkyrs>1 & quitsmkyrs<=2 ~ 4,
+      smoking==3 & quitsmkyrs>2 & quitsmkyrs<=3 ~ 5,
+      smoking==3 & quitsmkyrs>3 & quitsmkyrs<=4 ~ 6,
+      smoking==3 & quitsmkyrs>4 & quitsmkyrs<=5 ~ 7,
+      smoking==3 & quitsmkyrs>5 ~ 8,
+      )
+  )%>%transmute(CEA=CEA,CEA2=CEA2,group=factor(group))%>%filter(!is.na(group))%>%
+  ggboxplot(x='group',y='CEA2',fill='group',palette = 'jco',ylab='CEA',
+            xlab='years after cessiong of smoking',bxp.errorbar = TRUE)+
+  theme(legend.position = 'none')+scale_x_discrete(labels=c('<=1 year','1-2 year','2-3 year','3-4 year','4-5 year','>5 year'))+stat_compare_means(label.y=6)
 
 #age_group2 and CEA.group and sex and smoking
 mosaicplot(~CEA.group+smoking+sex+age.group,data=biomarker.smoking,shade=TRUE,color=TRUE)
@@ -522,6 +560,14 @@ biomarker%>%select(smoking,quitsmkyrs,sex,CEA)%>%transmute(
   
     ),  CEA=log(CEA)
   )%>%ggboxplot(x='group',y='CEA')
+#-----------------------------------------------饮酒---------------------------------------------
+biomarker2%>%transmute(alcohol=factor(alcohol,labels=c('NO','YES')),CEA=log(CEA))%>%filter(!is.na(alcohol))%>%
+  ggboxplot(x='alcohol',y='CEA',add='jitter',add.params = list(size=0.4,alpha=0.5),ylab='log(CEA)',fill='alcohol',palette = 'jco')+
+  stat_compare_means(label='p.signif',label.x=1.5,size=5)+theme(legend.position = 'none')
+#-----------------------------------------------BMI-------------------------------------------
+
+
+#---------------------------------------------癌症家族史-----------------------------------------
 
 #-------------------------------------------绝经年龄的分布----------------------------------------
 biomarker%>%select(agemenopau,menopause)%>%transmute(agemenopau=agemenopau,menopause=factor(menopause,labels=c('绝经前','绝经后')))%>%
