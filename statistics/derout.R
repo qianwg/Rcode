@@ -50,9 +50,12 @@ outlier_func<-function(x,id){
     id=id)%>%
     transmute(x=x,x_group=x_group,is_outlier=ifelse(is_outlier(x),x,as.numeric(NA)),id=id)%>%
     transmute(x=x,x_group=x_group,is_outlier=is_outlier,id=ifelse(is.na(is_outlier),NA,id))
-  plot<-outlier%>%filter(!is.na(x_group))%>%group_by(x_group)%>%summarise(na_n=sum(!is.na(is_outlier)))
-  table<-outlier%>%filter(!is.na(x_group))%>%ggboxplot(x='x_group',y='x',fill='x_group',palette = 'jco')+geom_text(aes(label=id),nudge_y = 0.05,na.rm = T)
-  return(list(plot,table))
+  table<-outlier%>%filter(!is.na(x_group))%>%group_by(x_group)%>%summarise(na_n=sum(!is.na(is_outlier)))
+  plot<-outlier%>%filter(!is.na(x_group))%>%ggboxplot(x='x_group',y='x',fill='x_group',palette = 'jco')+
+    geom_text(aes(label=id),nudge_y = 0.1,na.rm = T)+theme(legend.position = 'none')+scale_x_discrete(labels=c('极小值','极大值'))
+  outliers_file<-outlier%>%filter(!is.na(id))%>%select(id)
+  assign('outliers',outliers_file,envir=.GlobalEnv)
+  return(list(箱线图=plot,异常值数量=table))
   
 }
 outlier_func(x=biomarker$bmi,id=biomarker$ID_BLAST)
