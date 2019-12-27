@@ -9,7 +9,7 @@ library(fmsb)
 library(stargazer)
 biomarker<-read.xlsx('~/data/biomarker/Biomarker+baseline(2017+18+19).xlsx',detectDates=TRUE)
 source('~/Rcode/statistics/derout.R')
-#age
+#age-
 biomarker$age_group[biomarker$age>=40 & biomarker$age<45]<-1
 biomarker$age_group[biomarker$age>=45 & biomarker$age<50]<-2
 biomarker$age_group[biomarker$age>=50 & biomarker$age<55]<-3
