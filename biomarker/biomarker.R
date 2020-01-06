@@ -2,6 +2,7 @@ rm(list=ls())
 library(rio)
 library(openxlsx)
 library(ggpubr)
+library(ggstatsplot)
 library(table1)
 library(tidyverse)
 library(fmsb)
@@ -45,7 +46,7 @@ biomarker$bmi_group2<-with(biomarker,ifelse(bmi<25,1,2))
 #CEA(数值型时，将CEA>200的去除)
 biomarker$CEA.group<-ifelse(biomarker$CEA<=5,1,2)
 #极端值
-outlier_func(biomarker2$CEA,biomarker2$ID_BLAST)
+outlier_func(biomarker$CEA,biomarker$ID_BLAST)
 #AFP(数值型时，将AFP>250的去除)
 outlier_func(biomarker$AFP,biomarker$ID_BLAST)
 #CA199(数值型时，将CA199>250的去除)
@@ -282,7 +283,7 @@ ggscatter(data=biomarker,x='age',y='CA125',add='reg.line',add.params = list(colo
 #boxplot
 ggboxplot(data=subset(biomarker,age>=40 & age<=74),x='age',y='CA125')+yscale('log2',.format = TRUE)
 ##baseline
-biomarker_baseline4<-biomarker%>%select(CEA,AFP,CA199,sex,CA125,CA153,age,age_group)%>%transmute(
+biomarker_baseline4<-biomarker2%>%select(CEA,AFP,CA199,sex,CA125,CA153,age,age_group)%>%transmute(
   age=age,age_group=age_group,CA125,CA153,
   CEA=CEA,
   AFP=AFP,
@@ -564,8 +565,9 @@ biomarker%>%select(smoking,quitsmkyrs,sex,CEA)%>%transmute(
 biomarker2%>%transmute(alcohol=factor(alcohol,labels=c('NO','YES')),CEA=log(CEA))%>%filter(!is.na(alcohol))%>%
   ggboxplot(x='alcohol',y='CEA',add='jitter',add.params = list(size=0.4,alpha=0.5),ylab='log(CEA)',fill='alcohol',palette = 'jco')+
   stat_compare_means(label='p.signif',label.x=1.5,size=5)+theme(legend.position = 'none')
-#-----------------------------------------------BMI-------------------------------------------
 
+#-----------------------------------------------BMI-------------------------------------------
+biomarker 
 
 #---------------------------------------------癌症家族史-----------------------------------------
 
@@ -606,4 +608,38 @@ rndr.strat <- function(label, n, ...) {
 }
 table1(~CA125+CA153 | menopause ,data=biomarker.baseline5,render.continuous=c(.="Median [Q1,Q3]"),
        overall=F,render = rndr2,render.strat=rndr.strat,droplevels = F)
-#
+#-----------------------------------------胃蛋白酶原分析---------------------------------
+#----------------------------------------summary------------------------------
+source('~/Rcode/statistics/data_summary.R')
+data_summary(biomarker$PGI)
+data_summary(biomarker$PGII)
+data_summary(biomarker$PG_ratio)
+biomarker%>%transmute(sex=sex,PG1=PGI,PG2=PGII,PGR=PG_ratio)%>%filter(PG1<200)%>%
+gghistostats(x=PG1,binwidth = 1,bar.measure = 'density',type='p',
+             results.subtitle = FALSE, messages =FALSE,ggtheme = ggthemes::theme_tufte(),
+             normal.curve = TRUE, normal.curve.color = "black",centrality.para = "median",)
+#----------------------------------------------------------------------------------------
+ggstatsplot::ggscatterstats(
+  data = biomarker_baseline4,                                            # dataframe from which variables are taken
+  x = age,                                                  # predictor/independent variable 
+  y = CEA.log,                                                  # dependent variable
+  xlab = "age",                 # label for the x-axis
+  ylab = "log(CEA)",                                     # label for the y-axis
+  #label.var = "title",                                         # variable to use for labeling data points
+  #label.expression = "rating < 5 & budget > 100",              # expression for deciding which points to label
+  point.alpha = 0.7,
+  point.size = 4,
+  point.color = "grey50",
+  marginal = TRUE,                                             # show marginal distribution 
+  marginal.type = "density",                                   # type of plot for marginal distribution
+  centrality.para = "mean",                                    # centrality parameter to be plotted
+  margins = "both",                                            # marginal distribution on both axes
+  xfill = "#CC79A7",                                           # fill for marginals on the x-axis
+  yfill = "#009E73",                                           # fill for marginals on the y-axis
+  xalpha = 0.5,                                                # transparency for the x-axis marginals
+  yalpha = 0.75,                                               # transparency for the y-axis marginals
+  xsize = 1,                                                   # size for the x-axis marginals
+  ysize = 1,                                                   # size for the y-axis marginals
+  type = "spearman",                                            # type of linear association
+  messages = FALSE
+)
