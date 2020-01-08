@@ -37,7 +37,8 @@ biomarker$AFP_pos<-factor(ifelse(biomarker$AFP>7,2,1),labels=c('Negative','Posit
 #CA199
 biomarker$CA199_pos<-factor(ifelse(biomarker$CA199>27,2,1),labels=c('Negative','Positive'))
 #CA153
-biomarker$CA199_pos<-factor(ifelse(biomarker$CA199>25,2,1),labels=c('Negative','Positive'))
+biomarker$CA153_pos<-factor(ifelse(biomarker$CA153>25,2,1),labels=c('Negative','Positive'))
+biomarker$CA153<-ifelse(biomarker$CA153>0,biomarker$CA153,NA)
 #HBsAg
 #=0为阴性，>0为阳性
 biomarker$HBsAg_group<-ifelse(biomarker$HBsAg>0,2,1)
