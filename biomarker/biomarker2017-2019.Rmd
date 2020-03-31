@@ -1,0 +1,601 @@
+---
+title: "不同肿瘤标志物的人群分布特征及其用于肿瘤初筛的效果评价研究"
+author: "盛超"
+date: "2020/3/26"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+```{r 加载包 ,include=FALSE}
+library(rio)
+library(tidyverse)
+library(ggpubr)
+library(table1)
+library(tidyr)
+library(pROC)
+```
+```{r 读取数据, echo=FALSE}
+#读取数据
+biomarker<-import('C:/Users/sheng/Desktop/biomark2017-2019(剔除自身癌).sav')
+```
+```{r 基线数据准备, echo=FALSE}
+#baseline risk factors
+ baseline_compare<-biomarker%>%transmute(
+                       AFP_pos=factor(ifelse(AFP>7,2,1),levels = c(1,2),labels=c('阴性','阳性')),
+                     CEA_pos=factor(ifelse(CEA>5,2,1),levels = c(1,2),labels=c('阴性','阳性')),
+                     CA199_pos=factor(ifelse(CA199>27,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+                    CA125_pos=factor(ifelse(CA125>35,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+                    CA153_pos=factor(ifelse(CA153>25,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+                    PG_pos=factor(ifelse(PGI<=70 &  PG_ratio<=3,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+                     HBsAg_pos=factor(ifelse(HBsAg>0,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+                    AFP_contin=AFP,CEA_contin=CEA,CA199_contin=CA199,CA125_contin=CA125,CA153_contin=CA153,PG1_contin=PGI,PGR_contin=PG_ratio,
+                      AFP=factor(ifelse(AFP>7,2,1),levels = c(1,2,3),labels=c('阴性','阳性','P value')),
+                     CEA=factor(ifelse(CEA>5,2,1),levels = c(1,2,3),labels=c('阴性','阳性','P value')),
+                     CA199=factor(ifelse(CA199>27,2,1),levels=c(1,2,3),labels=c('阴性','阳性','P value')),
+                    CA125=factor(ifelse(CA125>35,2,1),levels=c(1,2,3),labels=c('阴性','阳性','P value')),
+                    CA153=factor(ifelse(CA153>25,2,1),levels=c(1,2,3),labels=c('阴性','阳性','P value')),
+                    PG=factor(ifelse(PGI<=70 &  PG_ratio<=3,2,1),levels=c(1,2,3),labels=c('阴性','阳性','P value')),
+                     HBsAg=factor(ifelse(HBsAg>0,2,1),levels=c(1,2,3),labels=c('阴性','阳性','P value')),
+                    FATH_sim=ifelse(cancerFH==2 | !is.na(CATPFath) |!is.na(CATPMoth) | !is.na(CATPBrot) |
+                                      !is.na(Catpbrot1) |!is.na(Catpbrot2)| !is.na(Catpsist1) | !is.na(CATPSist) |
+                                      !is.na(Catpsist2) |!is.na(CATPChil) | !is.na(Catpchil1) | !is.na(Catpchil2),1,0),
+                    FATH_sim=factor(ifelse(is.na(FATH_sim),0,FATH_sim),levels=c(0,1),labels = c('否','是')),
+                     lung_sim=ifelse(CATPFath==34 | CATPMoth==34 | CATPBrot==34 | Catpbrot1==34 |Catpbrot2==34 |
+                      CATPSist==34 | Catpsist1==34 | Catpsist2==34 | CATPChil==34 | Catpchil1==34 | Catpchil2==34,1,0),
+                    lung_sim=factor(ifelse(is.na(lung_sim),0,lung_sim),levels=c(0,1),labels=c('否','是')),
+                    breast_sim=ifelse(CATPMoth==47 |  CATPSist==47 | Catpsist1==47 | Catpsist2==47 | CATPChil==47 |                            Catpchil2==47,1,0),
+                    breast_sim=factor(ifelse(is.na(breast_sim),0,breast_sim),levels=c(0,1),labels=c('否','是')),
+                    liver_sim=ifelse(CATPFath==24 | CATPMoth==24 | CATPBrot==24 | Catpbrot1==24 |Catpbrot2==24 |
+                                                CATPSist==24 | Catpsist1==24 | Catpsist2==24 | CATPChil==24 |                               Catpchil1==24 | Catpchil2==24,1,0),
+                    liver_sim=factor(ifelse(is.na(liver_sim),0,liver_sim),levels=c(0,1),labels=c('否','是')),
+                    gastric_sim=ifelse(CATPFath==16 | CATPMoth==16 | CATPBrot==16 | Catpbrot1==16 |Catpbrot2==16 |
+                                                  CATPSist==16 | Catpsist1==16 | Catpsist2==16 | CATPChil==16 |                               Catpchil1==16 | Catpchil2==16,1,0),
+                     gastric_sim=factor(ifelse(is.na(gastric_sim),0,gastric_sim),levels = c(0,1),labels=c('否','是')),
+                     age_risk=ifelse(age<=49,'0',ifelse(age>=60,'2','1')),
+                     age_risk=ifelse(is.na(age_risk),0,age_risk),
+                     sex_risk=ifelse(sex_check==1,0,1),
+                    marriage_risk=case_when(
+                      marriag==1 ~ 1,
+                      marriag==2 ~ 2,
+                      marriag==3  | marriag==4 ~ 3
+                    ),
+                  marriage_risk=factor(marriage_risk,levels = c(1,2,3),labels=c('已婚','未婚','离婚或丧偶')),
+                  education_risk=case_when(
+                    educati==1 | educati==2 | educati==3 ~ 1,
+                    educati==4 ~ 2,
+                    educati==5 | educati==6 ~ 3,
+                  ),
+                  education_risk=factor(education_risk,levels=c(1,2,3),labels=c('初中及以下','高中/中专/技校','大学及以                  上')),
+                  income_risk=factor(income,levels = c(1,2,3,4),labels=c('<3000','3000-4999','5000-9999','>10000')),
+                  employm_risk=factor(employm,levels=c(1,2,3,4),labels=c('在业','离退休','失业/下岗/待业','家务/无业')),
+                  blood_risk=factor(bloodtp,levels = c(1,2,3,4,5),labels=c('A','B','O','AB','不详')),
+                     smk_risk=case_when(
+                       smoking==1 ~ 0,
+                       smoking==3 & quitsmkyrs>=15 & cpd*smkyrs<400 ~ 1,
+                       smoking==3 & quitsmkyrs<15 & cpd*smkyrs<400 ~ 2,
+                       smoking==2 & cpd*smkyrs<400 ~ 3,
+                       smoking==3 & quitsmkyrs>=15 & cpd*smkyrs>=400 ~ 4,
+                       smoking==3 & quitsmkyrs<15 & cpd*smkyrs>=400 ~ 5,
+                       smoking==2 & cpd*smkyrs>=400 ~ 6
+                     ),
+                     smk_risk=ifelse(is.na(smk_risk),0,smk_risk),
+                     smk_risk2=factor(smoking,levels=c(1,2,3),labels=c('从不吸烟','目前仍在吸烟','以前吸烟')),
+                     psmk_risk=case_when(
+                       passivesmk==1 ~ 0,
+                       passivesmk==2 & psmkyrs<10 ~ 1,
+                       passivesmk==2 & psmkyrs>=10 ~ 2,
+                     ),
+                     psmk_risk=ifelse(is.na(psmk_risk),0,psmk_risk),
+                     BMI_risk=ifelse(10000*weight/(height*height)<24,0,ifelse(10000*weight/(height*height)<28,1,2)),
+                     BMI_risk=ifelse(is.na(BMI_risk),0,BMI_risk),
+                     #饮食
+                     alcohol_risk=ifelse(alcohol==2 & !is.na(alcohol),1,0),
+                     tea_risk=ifelse(tea==2 & !is.na(tea),1,0),
+                     yogurt_risk=ifelse(yogurt==2 & !is.na(yogurt),1,0),
+                     veget_risk=ifelse(veget==2 & !is.na(veget),1,0),
+                     fruit_risk=ifelse(fruit==2 & !is.na(fruit),1,0),
+                     grain_risk=ifelse(grain==2 & !is.na(grain),1,0),
+                     egg_risk=ifelse(egg==2 & !is.na(egg),1,0),
+                     cereal_risk=ifelse(cereal==2 & !is.na(cereal),1,0),
+                     beans_risk=ifelse(beans==2 & !is.na(beans),1,0),
+                     nuts_risk=ifelse(nuts==2 & !is.na(nuts),1,0),
+                     fungus_risk=ifelse(fungus==2 & !is.na(fungus),1,0),
+                     #体育锻炼
+                     exercise_risk=ifelse(exercise==2 & !is.na(exercise),1,0),
+                     jog_risk=factor(ifelse(jog==2,1,0),levels=c(0,1),labels=c('否','是')),#快走
+                    taichi_risk=factor(ifelse(taichi==2,1,0),levels=c(0,1),labels=c('否','是')),#太极
+                     fitdance_risk=factor(ifelse(fitdance==2,1,0),levels=c(0,1),labels=c('否','是')),#广场舞
+                    yoga_risk=factor(ifelse(yoga==2,1,0),levels=c(0,1),labels=c('否','是')),#瑜伽
+                    swim_risk=factor(ifelse(swim==2,1,0),levels=c(0,1),labels=c('否','是')),#游泳
+                    run_risk=factor(ifelse(run==2,1,0),levels=c(0,1),labels=c('否','是')),#跑步
+                    ball_risk=factor(ifelse(ball==2,1,0),levels=c(0,1),labels=c('否','是')),#球类
+                     apparatus_risk=factor(ifelse(apparatus==2,1,0),levels=c(0,1),labels=c('否','是')),#器械
+                     #静态时间
+                     sedentaryh_risk=ifelse(is.na(sedentaryh),1,sedentaryh),
+                     #手机使用时间
+                     cellphoneh_risk=factor(cellphoneh,levels=c(1,2,3,4),labels=c('少于3小时','3-6小时','7-12小时','13小时及以上')),
+                     #基础性疾病
+                   disea1_risk=factor(ifelse(Disea1==2 & !is.na(Disea1),1,0),levels=c(0,1),labels=c('否','是')),#弥漫性肺间质纤维化
+                   disea2_risk=factor(ifelse(Disea2==2 & !is.na(Disea2),1,0),levels=c(0,1),labels=c('否','是')),#肺结核
+                   disea3_risk=factor(ifelse(Disea3==2 & !is.na(Disea3),1,0),levels=c(0,1),labels=c('否','是')),#慢性支气管炎
+                   disea4_risk=factor(ifelse(Disea4==2 & !is.na(Disea4),1,0),levels=c(0,1),labels=c('否','是')),#肺气肿
+                   disea5_risk=factor(ifelse(Disea5==2 & !is.na(Disea5),1,0),levels=c(0,1),labels=c('否','是')),#哮喘支气管扩张
+                   disea6_risk=factor(ifelse(Disea6==2 & !is.na(Disea6),1,0),levels=c(0,1),labels=c('否','是')),#矽肺或尘肺
+                   disea7_risk=factor(ifelse(Disea7==2 & !is.na(Disea7),1,0),levels=c(0,1),labels=c('否','是')),#胆囊息肉
+                   disea8_risk=factor(ifelse(Disea8==2 & !is.na(Disea8),1,0),levels=c(0,1),labels=c('否','是')),#胆结石
+                   disea9_risk=factor(ifelse(Disea9==2 & !is.na(Disea9),1,0),levels=c(0,1),labels=c('否','是')),#脂肪肝
+                   disea10_risk=factor(ifelse(Disea10==2 & !is.na(Disea10),1,0),levels=c(0,1),labels=c('否','是')),#肝硬化
+                   disea11_risk=factor(ifelse(Disea11==2 & !is.na(Disea11),1,0),levels=c(0,1),labels=c('否','是')),#慢性乙型肝炎
+                   disea12_risk=factor(ifelse(Disea12==2 & !is.na(Disea12),1,0),levels=c(0,1),labels=c('否','是')),#慢性丙型肝炎
+                   disea13_risk=factor(ifelse(Disea13==2 & !is.na(Disea13),1,0),levels=c(0,1),labels=c('否','是')),#血吸虫病感染史
+                   disea14_risk=factor(ifelse(Disea14==2 & !is.na(Disea14),1,0),levels=c(0,1),labels=c('否','是')),#食管或胃上皮内瘤变
+                   disea15_risk=factor(ifelse(Disea15==2 & !is.na(Disea15),1,0),levels=c(0,1),labels=c('否','是')),#十二指肠溃疡
+                   disea16_risk=factor(ifelse(Disea16==2 & !is.na(Disea16),1,0),levels=c(0,1),labels=c('否','是')),#Barrett食管
+                   disea17_risk=factor(ifelse(Disea17==2 & !is.na(Disea17),1,0),levels=c(0,1),labels=c('否','是')),#萎缩性胃炎
+                   disea18_risk=factor(ifelse(Disea18==2 & !is.na(Disea18),1,0),levels=c(0,1),labels=c('否','是')),#胃溃疡
+                   disea19_risk=factor(ifelse(Disea19==2 & !is.na(Disea19),1,0),levels=c(0,1),labels=c('否','是')),#胃息肉
+                   disea20_risk=factor(ifelse(Disea20==2 & !is.na(Disea20),1,0),levels=c(0,1),labels=c('否','是')),#幽门螺杆菌感染史
+                   disea21_risk=factor(ifelse(Disea21==2 & !is.na(Disea21),1,0),levels=c(0,1),labels=c('否','是')),#EB病毒感染史
+                   disea22_risk=factor(ifelse(Disea22==2 & !is.na(Disea22),1,0),levels=c(0,1),labels=c('否','是')),#胃粘膜异性增生
+                   disea23_risk=factor(ifelse(Disea23==2 & !is.na(Disea23),1,0),levels=c(0,1),labels=c('否','是')),#胃肠上皮化生
+                   disea24_risk=factor(ifelse(Disea24==2 & !is.na(Disea24),1,0),levels=c(0,1),labels=c('否','是')),#残胃
+                   disea25_risk=factor(ifelse(Disea25==2 & !is.na(Disea25),1,0),levels=c(0,1),labels=c('否','是')),#乳腺小叶不典型增生
+                   disea26_risk=factor(ifelse(Disea26==2 & !is.na(Disea26),1,0),levels=c(0,1),labels=c('否','是')),#乳腺导管不典型增生
+                   disea27_risk=factor(ifelse(Disea27==2 & !is.na(Disea27),1,0),levels=c(0,1),labels=c('否','是')),#乳腺小叶原位癌
+                     disea28_risk=factor(ifelse(Disea28==2 & !is.na(Disea28),1,0),levels=c(0,1),labels=c('否','是')),#糖尿病
+                     disea29_risk=factor(ifelse(Disea29==2 & !is.na(Disea29),1,0),levels=c(0,1),labels=c('否','是')),#高血压
+                     disea30_risk=factor(ifelse(Disea30==2 & !is.na(Disea30),1,0),levels=c(0,1),labels=c('否','是')),#高血脂
+                     disea31_risk=factor(ifelse(Disea31==2 & !is.na(Disea31),1,0),levels=c(0,1),labels=c('否','是')),#冠心病
+                     disea32_risk=factor(ifelse(Disea32==2 & !is.na(Disea32),1,0),levels=c(0,1),labels=c('否','是')),#中风
+                     #职业暴露
+                     cadmium_risk=factor(ifelse(cadmium==2,1,0),levels=c(0,1),labels=c('否','是')),#镉
+                    asbestos_risk=factor(ifelse(asbestos==2,1,0),levels=c(0,1),labels=c('否','是')),#石棉
+                     nickel_risk=factor(ifelse(nickel==2,1,0),levels=c(0,1),labels=c('否','是')),#镍
+                     arsenic_risk=factor(ifelse(arsenic==2,1,0),levels=c(0,1),labels=c('否','是')),#砷
+                     radon_risk=factor(ifelse(radon==2,1,0),levels=c(0,1),labels=c('否','是')),#氡
+                     chloroethy_risk=factor(ifelse(chloroethy==2,1,0),levels=c(0,1),labels=c('否','是')),#氯乙烯
+                     Xray_risk=factor(ifelse(Xray==2,1,0),levels=c(0,1),labels=c('否','是')),#X射线
+                     benzene_risk=factor(ifelse(benzene==2,1,0),levels=c(0,1),labels=c('否','是')),#苯
+                    #结局
+                    CA=factor(ifelse(CA==1,1,0),levels = c(0,1),labels=c('Negative','Positive')),CA_type=CA_type,
+                  
+                     )%>%transmute(CEA=CEA,AFP=AFP,CA199=CA199,CA153=CA153,CA125=CA125,PG=PG,HBsAg=HBsAg,
+                      CEA_pos=CEA_pos,AFP_pos=AFP_pos,CA199_pos=CA199_pos,CA153_pos=CA153_pos,CA125_pos=CA125_pos,PG_pos=PG_pos,HBsAg_pos=HBsAg_pos,AFP_contin=AFP_contin,CEA_contin=CEA_contin,CA199_contin=CA199_contin,CA125_contin=CA125_contin,CA153_contin=CA153_contin,PG1_contin=PG1_contin,PGR_contin=PGR_contin,癌症家族史=FATH_sim,肺癌家族史=lung_sim,乳腺癌家族史=breast_sim,肝癌家族史=liver_sim,胃癌家族史=gastric_sim,
+                  年龄=factor(age_risk,levels=c(0,1,2),labels=c('<50','50-59','>=60')),性别=factor(sex_risk,levels=c(0,1),labels=c('男性','女性')),家庭收入=income_risk,就业状况=employm_risk,BMI=factor(BMI_risk),BMI2=factor(BMI_risk,levels = c(0,1,2,3),labels=c('<24','24-27.9','>=28','P value')),饮酒=factor(alcohol_risk),喝茶=factor(tea_risk),酸奶=factor(yogurt_risk),吸烟=factor(smk_risk),吸烟2=smk_risk2,被动吸烟=factor(psmk_risk),婚姻=marriage_risk,教育=education_risk,血型=blood_risk,蔬菜=factor(veget_risk),水果=factor(fruit_risk),谷类=factor(grain_risk),鸡蛋=factor(egg_risk),杂粮=factor(cereal_risk),豆类=factor(beans_risk),坚果=factor(nuts_risk),菌类=factor(fungus_risk),运动=factor(exercise_risk),快走=jog_risk,太极=taichi_risk,广场舞=fitdance_risk,瑜伽=yoga_risk,游泳=swim_risk,跑步=run_risk,球类=ball_risk,器械=apparatus_risk,静态时间=factor(sedentaryh_risk),手机使用时间=cellphoneh_risk,弥漫性肺间质纤维化=disea1_risk,肺结核=disea2_risk,慢性支气管炎=disea3_risk,肺气肿=disea4_risk,哮喘支气管扩张=disea5_risk,矽肺或尘肺=disea6_risk,胆囊息肉=disea7_risk,胆结石=disea8_risk,脂肪肝=disea9_risk,肝硬化=disea10_risk,慢性乙型肝炎=disea11_risk,慢性丙型肝炎=disea12_risk,血吸虫病感染史=disea13_risk,食管或胃上皮内瘤变=disea14_risk,十二指肠溃疡=disea15_risk,Barrett食管=disea16_risk,萎缩性胃炎=disea17_risk,胃溃疡=disea18_risk,胃息肉=disea19_risk,幽门螺杆菌感染史=disea20_risk,EB病毒感染史=disea21_risk,胃粘膜异性增生=disea22_risk,胃肠上皮化生=disea23_risk,残胃=disea24_risk,乳腺小叶不典型增生=disea25_risk,乳腺导管不典型增生=disea26_risk,乳腺小叶原位癌=disea27_risk,糖尿病=disea28_risk,高血压=disea29_risk,高血脂=disea30_risk,冠心病=disea31_risk,中风=disea32_risk,镉=cadmium_risk,石棉=asbestos_risk,镍=nickel_risk,砷=arsenic_risk,氡=radon_risk,氯乙烯=chloroethy_risk,X射线=Xray_risk,苯=benzene_risk,CA=CA,CA_type=CA_type,
+                  CA_type_female=ifelse(CA_type=='宫颈癌' | CA_type=='乳腺癌' | CA_type=='输卵管癌' | CA_type=='子宫内膜癌',1,0)
+)
+
+baseline_compare_female<-baseline_compare%>%filter(性别=='女性')
+baseline_compare_female2<-baseline_compare_female%>%filter(CA_type_female!=2)
+```
+```{r table1包公用参数 ,echo=FALSE}
+rndr.strat <- function(label, n, ...) {
+  ifelse(n==0, label, render.strat.default(label, n, ...))
+}
+my.render.cat <- function(x) {
+  c("", sapply(stats.default(x), function(y) with(y,
+          sprintf("%d (%0.2f %%)", FREQ, PCT))))
+}
+```
+```{r 公用函数, include=FALSE}
+mytheme<-theme(plot.title=element_text(hjust=0.5,face="bold"),
+               axis.title=element_text(face="bold",size=10),
+               axis.text=element_text(face="bold",size=9),
+               #panel.grid.major = element_line(colour=NA),
+               #panel.grid.minor = element_blank(),
+               #panel.background=element_rect(fill=NA),
+               legend.position = 'none',
+               strip.background = element_rect(
+                 color = "white", fill = "white"),
+               panel.spacing.y=unit(0.05, "lines"))
+#描述性分析
+data_summary<-function(x){
+  NAN<-sum(is.na(x))
+  x2<-x[!is.na(x)]
+  n<-length(x2)
+  m<-mean(x2)
+  v<-var(x2)
+  s<-sd(x2)
+  me<-median(x2)
+  #cv<-100*s/m
+  #css<-sum((x2-m)^2)
+  #uss<-sum(x2^2)
+  #R<-max(x2)-min(x2)
+  #R1<-quantile(x2,3/4)-quantile(x2,1/4)
+  sm<-s/sqrt(n)
+  g1<-n/((n-1)*(n-2))*sum((x2-m)^3)/s^3
+  g2<-((n*(n+1))/((n-1)*(n-2)*(n-3))*sum((x2-m)^4/s^4)-(3*(n-1)^2)/((n-2)*(n-3)))
+       data.frame(N=n,Missing=NAN,Mean=m,Median=me,std_mean=sm,Skewness=g1,
+                  Kurtosis=g2,row.names = 1)
+       
+}
+#BMI
+rndr_baseline_BMI<-function(x, name, ...){
+  if (length(x) == 0) {
+    y <- baseline_compare[[name]]
+    s <- rep("", length(render.default(x=y, name=name, ...)))
+    if (is.numeric(y)) {
+      p <- kruskal.test(y ~ baseline_compare$BMI)$p.value
+      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
+    } else {
+      p <- chisq.test(table(y, droplevels(baseline_compare$BMI)))$p.value
+      #p <- chisq.test(table(y, droplevels(lung$year)))$statistic
+      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+    }
+    s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
+    s
+  } else {
+    render.default(x=x, name=name,...)
+  }
+}
+#CEA
+rndr_baseline_CEA<-function(x, name, ...){
+  if (length(x) == 0) {
+    y <- baseline_compare[[name]]
+    s <- rep("", length(render.default(x=y, name=name, ...)))
+    if (is.numeric(y)) {
+      p <- kruskal.test(y ~ baseline_compare$CEA)$p.value
+      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
+    } else {
+      p <- chisq.test(table(y, droplevels(baseline_compare$CEA)))$p.value
+      #p <- chisq.test(table(y, droplevels(lung$year)))$statistic
+      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+    }
+    s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
+    s
+  } else {
+    render.default(x=x, name=name,...)
+  }
+}
+#AFP
+rndr_baseline_AFP<-function(x, name, ...){
+  if (length(x) == 0) {
+    y <- baseline_compare[[name]]
+    s <- rep("", length(render.default(x=y, name=name, ...)))
+    if (is.numeric(y)) {
+      p <- kruskal.test(y ~ baseline_compare$AFP)$p.value
+      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
+    } else {
+      p <- chisq.test(table(y, droplevels(baseline_compare$AFP)))$p.value
+      #p <- chisq.test(table(y, droplevels(lung$year)))$statistic
+      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+    }
+    s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
+    s
+  } else {
+    render.default(x=x, name=name,...)
+  }
+}
+#CA199
+rndr_baseline_CA199<-function(x, name, ...){
+  if (length(x) == 0) {
+    y <- baseline_compare[[name]]
+    s <- rep("", length(render.default(x=y, name=name, ...)))
+    if (is.numeric(y)) {
+      p <- kruskal.test(y ~ baseline_compare$CA199)$p.value
+      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
+    } else {
+      p <- chisq.test(table(y, droplevels(baseline_compare$CA199)))$p.value
+      #p <- chisq.test(table(y, droplevels(lung$year)))$statistic
+      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+    }
+    s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
+    s
+  } else {
+    render.default(x=x, name=name,...)
+  }
+}
+#CA153
+rndr_baseline_CA153<-function(x, name, ...){
+  if (length(x) == 0) {
+    y <- baseline_compare_female[[name]]
+    s <- rep("", length(render.default(x=y, name=name, ...)))
+    if (is.numeric(y)) {
+      p <- kruskal.test(y ~ baseline_compare_female$CA153)$p.value
+      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
+    } else {
+      p <- chisq.test(table(y, droplevels(baseline_compare_female$CA153)))$p.value
+      #p <- chisq.test(table(y, droplevels(lung$year)))$statistic
+      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+    }
+    s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
+    s
+  } else {
+    render.default(x=x, name=name,...)
+  }
+}
+#CA125
+rndr_baseline_CA125<-function(x, name, ...){
+  if (length(x) == 0) {
+    y <- baseline_compare_female[[name]]
+    s <- rep("", length(render.default(x=y, name=name, ...)))
+    if (is.numeric(y)) {
+      p <- kruskal.test(y ~ baseline_compare_female$CA125)$p.value
+      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
+    } else {
+      p <- chisq.test(table(y, droplevels(baseline_compare_female$CA125)))$p.value
+      #p <- chisq.test(table(y, droplevels(lung$year)))$statistic
+      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+    }
+    s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
+    s
+  } else {
+    render.default(x=x, name=name,...)
+  }
+}
+#PG
+rndr_baseline_PG<-function(x, name, ...){
+  if (length(x) == 0) {
+    y <- baseline_compare[[name]]
+    s <- rep("", length(render.default(x=y, name=name, ...)))
+    if (is.numeric(y)) {
+      p <- kruskal.test(y ~ baseline_compare$PG)$p.value
+      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
+    } else {
+      p <- chisq.test(table(y, droplevels(baseline_compare$PG)))$p.value
+      #p <- chisq.test(table(y, droplevels(lung$year)))$statistic
+      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+    }
+    s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
+    s
+  } else {
+    render.default(x=x, name=name,...)
+  }
+}
+#HBsAg
+rndr_baseline_HBsAg<-function(x, name, ...){
+  if (length(x) == 0) {
+    y <- baseline_compare[[name]]
+    s <- rep("", length(render.default(x=y, name=name, ...)))
+    if (is.numeric(y)) {
+      p <- kruskal.test(y ~ baseline_compare$HBsAg)$p.value
+      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
+    } else {
+      p <- chisq.test(table(y, droplevels(baseline_compare$HBsAg)))$p.value
+      #p <- chisq.test(table(y, droplevels(lung$year)))$statistic
+      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+    }
+    s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
+    s
+  } else {
+    render.default(x=x, name=name,...)
+  }
+}
+
+```
+
+#### **一、不同肿瘤标志物的人群分布特征及其关联分析**  
+**1.1、不同肿瘤标志物筛查人群的总体分布情况**    
+```{r 描述性分析情况 ,echo=FALSE}
+as.data.frame(do.call(rbind,apply(biomarker[,c('AFP','CA125','CEA','CA153','PGI','PGII','PG_ratio')],2,data_summary)))
+
+```
+```{r 直方图 ,echo=FALSE ,warning=FALSE ,message=FALSE}
+#直方图
+biomarker%>%transmute(AFP=ifelse(AFP<quantile(AFP,0.99,na.rm=T),AFP,NA),
+                      CA125=ifelse(CA125<quantile(CA125,0.99,na.rm=T),CA125,NA),
+                      CEA=ifelse(CEA<quantile(CEA,0.99,na.rm=T),CEA,NA),
+                      CA153=ifelse(CA153<quantile(CA153,0.99,na.rm=T),CA153,NA),
+                      CA199=ifelse(CA199<quantile(CA199,0.99,na.rm=T),CA199,NA),                                PG1=ifelse(PGI<quantile(PGI,0.99,na.rm=T),PGI,NA),
+                      PG2=ifelse(PGII<quantile(PGII,0.99,na.rm=T),PGII,NA),
+                      PGR=ifelse(PG_ratio<quantile(PG_ratio,0.99,na.rm=T),PG_ratio,NA))%>%pivot_longer(cols=c('AFP','CA125','CEA','CA153','PG1','PG2','PGR','CA199'),names_to='marker',values_to='value')%>%ggplot(aes(x=value,y=..density..))+geom_histogram(bins=30)+facet_wrap(marker~.,scales = 'free',nrow=2)+mytheme+labs(x='')
+  
+```
+```{r 百分条图, echo=FALSE}
+biomarker%>%transmute(
+  AFP=factor(ifelse(AFP>7,2,1),levels = c(1,2),labels=c('阴性','阳性')),
+  CEA=factor(ifelse(CEA>5,2,1),levels = c(1,2),labels=c('阴性','阳性')),
+  CA199=factor(ifelse(CA199>27,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+  CA125=factor(ifelse(CA125>35,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+  CA153=factor(ifelse(CA153>25,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+  PG=factor(ifelse(PGI<=70 &  PG_ratio<=3,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+  HBsAg=factor(ifelse(HBsAg>0,2,1),levels=c(1,2),labels=c('阴性','阳性'))
+)%>%pivot_longer(cols=c('AFP','CEA','CA199','CA125','CA153','PG','HBsAg'),names_to = 'marker',values_to = 'value')%>%filter(!is.na(value))%>%group_by(marker,value)%>%summarise(n=n())%>%ggplot(aes(x=reorder(marker,n),y=n,fill=value))+geom_bar(stat='identity',position = 'fill')+labs(x='',y='percent')
+```
+
+**1.2、不同肿瘤标志物筛查阳性与阴性人群的基本人群特征分布比较**     
+
+**1.2.1、CEA筛查阳性与阴性人群的基本人群特征分布比较**     
+```{r CEA, echo=FALSE}
+table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | CEA,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F) 
+``` 
+
+**1.2.2、AFP筛查阳性与阴性人群的基本人群特征分布比较**   
+```{r AFP, echo=FALSE}
+table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | AFP,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F) 
+```    
+
+**1.2.3、CA199筛查阳性与阴性人群的基本人群特征分布比较**    
+```{r CA199 ,echo=FALSE}
+table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | CA199,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F) 
+```
+
+**1.2.4、CA125筛查阳性与阴性人群的基本人群特征分布比较**   
+```{r CA125 ,warning=FALSE,echo=FALSE}
+table1(~年龄+教育+婚姻+血型+血型+就业状况 | CA125,render.categorical=my.render.cat,
+       data=baseline_compare_female,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F) 
+```
+
+**1.2.5、CA153筛查阳性与阴性人群的基本人群特征分布比较**  
+```{r CA153, echo=FALSE}
+table1(~年龄+教育+婚姻+血型+血型+就业状况 | CA153,render.categorical=my.render.cat,
+       data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F) 
+```    
+
+**1.2.6、PG筛查阳性与阴性人群的基本人群特征分布比较** 
+```{r PG ,warning=FALSE,echo=FALSE}
+table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | PG,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F) 
+``` 
+
+**1.2.7、HBsAg筛查阳性与阴性人群的基本人群特征分布比较**   
+```{r HbsAg ,message=FALSE, warning=FALSE,echo=FALSE}
+table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | HBsAg,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F) 
+```
+
+**1.3、不同肿瘤标志物筛查阳性与癌症共性危险因素之间的关联分析**    
+
+**1.3.1、肿瘤标志物筛查阳性与吸烟及被动吸烟之间的关联分析**     
+```{r ,warning=FALSE,echo=FALSE}
+table1(~吸烟+吸烟2+被动吸烟 | CEA,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与吸烟及被动吸烟之间的关联') 
+table1(~吸烟+吸烟2+被动吸烟 | AFP,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F,caption='AFP与吸烟及被动吸烟之间的关联') 
+table1(~吸烟+吸烟2+被动吸烟 | CA199,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与吸烟及被动吸烟之间的关联') 
+table1(~吸烟+吸烟2+被动吸烟 | CA125,render.categorical=my.render.cat,
+       data=baseline_compare_female,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F,caption='CA125与吸烟及被动吸烟之间的关联') 
+table1(~吸烟+吸烟2+被动吸烟 | CA153,render.categorical=my.render.cat,
+       data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA199与吸烟及被动吸烟之间的关联') 
+
+table1(~吸烟+吸烟2+被动吸烟 | PG,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与吸烟及被动吸烟之间的关联') 
+table1(~吸烟+吸烟2+被动吸烟 | HBsAg,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与吸烟及被动吸烟之间的关联') 
+```
+**1.3.2 肿瘤标志物筛查阳性与肥胖之间的关联分析**     
+```{r echo=FALSE,warning=FALSE}
+table1(~CEA_pos+AFP_pos+CA199_pos+PG_pos+HBsAg_pos+CA125_pos+CA153_pos | BMI2,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_BMI,render.strat=rndr.strat,droplevels = F) 
+```
+**1.3.3 肿瘤标志物筛查阳性与饮食/饮酒/饮茶之间的关联分析（饮食细分条目）**  
+```{r echo=FALSE,warning=FALSE}
+table1(~饮酒+喝茶+酸奶+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+菌类 | CEA,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与饮食/饮酒/饮茶之间的关联') 
+table1(~饮酒+喝茶+酸奶+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+菌类 | AFP,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F,caption='AFP与饮食/饮酒/饮茶之间的关联') 
+table1(~饮酒+喝茶+酸奶+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+菌类 | CA199,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与饮食/饮酒/饮茶之间的关联') 
+table1(~饮酒+喝茶+酸奶+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+菌类 | CA125,render.categorical=my.render.cat,
+       data=baseline_compare_female,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F,caption='CA125与饮食/饮酒/饮茶之间的关联') 
+table1(~饮酒+喝茶+酸奶+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+菌类 | CA153,render.categorical=my.render.cat,
+       data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA153与饮食/饮酒/饮茶之间的关联') 
+table1(~饮酒+喝茶+酸奶+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+菌类 | PG,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与饮食/饮酒/饮茶之间的关联') 
+table1(~饮酒+喝茶+酸奶+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+菌类 | HBsAg,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与饮食/饮酒/饮茶之间的关联') 
+```
+**1.3.4 肿瘤标志物筛查阳性与身体活动之间的关联分析**
+```{r echo=FALSE ,warning=FALSE}
+table1(~运动+快走+太极+广场舞+瑜伽+游泳+跑步+球类+器械+静态时间+手机使用时间 | CEA,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与身体活动之间的关联') 
+table1(~运动+快走+太极+广场舞+瑜伽+游泳+跑步+球类+器械+静态时间+手机使用时间 | AFP,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F,caption='AFP与身体活动之间的关联') 
+table1(~运动+快走+太极+广场舞+瑜伽+游泳+跑步+球类+器械+静态时间+手机使用时间 | CA199,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与身体活动之间的关联') 
+table1(~运动+快走+太极+广场舞+瑜伽+游泳+跑步+球类+器械+静态时间+手机使用时间 | CA125,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F,caption='CA125与身体活动之间的关联') 
+table1(~运动+快走+太极+广场舞+瑜伽+游泳+跑步+球类+器械+静态时间+手机使用时间 | CA153,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA153与身体活动之间的关联') 
+table1(~运动+快走+太极+广场舞+瑜伽+游泳+跑步+球类+器械+静态时间+手机使用时间 | PG,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与身体活动之间的关联') 
+table1(~运动+快走+太极+广场舞+瑜伽+游泳+跑步+球类+器械+静态时间+手机使用时间 | HBsAg,render.categorical=my.render.cat,
+       data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与身体活动之间的关联') 
+```
+**1.3.6 肿瘤标志物筛查阳性与糖尿病、高血压、高血脂、冠心病、中风等基础性疾病之间的关联分析**   
+```{r echo=FALSE,warning=FALSE}
+table1(~糖尿病+高血压+高血脂+冠心病+中风|CEA,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与基础性疾病的关联') 
+table1(~糖尿病+高血压+高血脂+冠心病+中风|AFP,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F,caption='AFP与基础性疾病的关联')
+table1(~糖尿病+高血压+高血脂+冠心病+中风|CA199,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与基础性疾病之间的关联')
+table1(~糖尿病+高血压+高血脂+冠心病+中风|CA125,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与基础性疾病之间的关联')
+table1(~糖尿病+高血压+高血脂+冠心病+中风|CA153,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA153与基础性疾病之间的关联')
+table1(~糖尿病+高血压+高血脂+冠心病+中风|PG,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与基础性疾病之间的关联')
+table1(~糖尿病+高血压+高血脂+冠心病+中风|HBsAg,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与基础性疾病之间的关联')
+
+```
+**1.4、不同肿瘤标志物筛查阳性与癌症特异性危险因素之间的关联分析**  
+
+**1.4.1 肿瘤标志物筛查阳性与不同癌症家族史之间的关联分析**  
+```{r warning=FALSE}
+table1(~癌症家族史+肺癌家族史+乳腺癌家族史+肝癌家族史+胃癌家族史|CEA,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与不同癌症家族史之间的关联') 
+table1(~癌症家族史+肺癌家族史+乳腺癌家族史+肝癌家族史+胃癌家族史|AFP,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F,caption='AFP与不同癌症家族史之间的关联') 
+table1(~癌症家族史+肺癌家族史+乳腺癌家族史+肝癌家族史+胃癌家族史|CA199,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与不同癌症家族史之间的关联') 
+table1(~癌症家族史+肺癌家族史+乳腺癌家族史+肝癌家族史+胃癌家族史|CA125,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F,caption='CA125与不同癌症家族史之间的关联') 
+table1(~癌症家族史+肺癌家族史+乳腺癌家族史+肝癌家族史+胃癌家族史|CA153,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA153与不同癌症家族史之间的关联') 
+table1(~癌症家族史+肺癌家族史+乳腺癌家族史+肝癌家族史+胃癌家族史|PG,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与不同癌症家族史之间的关联') 
+table1(~癌症家族史+肺癌家族史+乳腺癌家族史+肝癌家族史+胃癌家族史|HBsAg,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与不同癌症家族史之间的关联') 
+```
+**1.4.2 肿瘤标志物筛查阳性与特殊疾病史之间的关联分析**  
+```{r warning=FALSE}
+table1(~弥漫性肺间质纤维化+肺结核+慢性支气管炎+肺气肿+哮喘支气管扩张+矽肺或尘肺+胆囊息肉+胆结石+脂肪肝+肝硬化+
+         慢性乙型肝炎+慢性丙型肝炎+血吸虫病感染史+食管或胃上皮内瘤变+十二指肠溃疡+Barrett食管+萎缩性胃炎+
+         胃溃疡+胃息肉+幽门螺杆菌感染史+EB病毒感染史+胃粘膜异性增生+胃肠上皮化生+残胃+乳腺小叶不典型增生+乳腺导管不典型增生+乳腺小叶原位癌|CEA,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与不同疾病史之间的关联') 
+table1(~矽肺或尘肺+胆囊息肉+胆结石+脂肪肝+肝硬化+
+         慢性乙型肝炎+慢性丙型肝炎+血吸虫病感染史|AFP,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F,caption='AFP与不同疾病史之间的关联') 
+table1(~胆囊息肉+胆结石+脂肪肝+肝硬化+
+         慢性乙型肝炎+慢性丙型肝炎+血吸虫病感染史+食管或胃上皮内瘤变+十二指肠溃疡+Barrett食管+萎缩性胃炎+
+         胃溃疡+胃息肉+幽门螺杆菌感染史+EB病毒感染史+胃粘膜异性增生+胃肠上皮化生|CA199,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CA199与不同疾病史之间的关联') 
+table1(~乳腺小叶不典型增生+乳腺导管不典型增生+乳腺小叶原位癌|CEA,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F,caption='CA125与不同疾病史之间的关联')
+table1(~乳腺小叶不典型增生+乳腺导管不典型增生+乳腺小叶原位癌|CA153,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA153与不同疾病史之间的关联')
+table1(~食管或胃上皮内瘤变+十二指肠溃疡+Barrett食管+萎缩性胃炎+
+         胃溃疡+胃息肉+幽门螺杆菌感染史+EB病毒感染史+胃粘膜异性增生+胃肠上皮化生+残胃|PG,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与不同疾病史之间的关联')
+table1(~胆囊息肉+胆结石+脂肪肝+肝硬化+
+         慢性乙型肝炎+慢性丙型肝炎+血吸虫病感染史|HBsAg,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与不同疾病史之间的关联')
+```
+**1.4.3 肿瘤标志物筛查阳性与特殊职业暴露之间的关联分析**  
+***
+```{r warning=FALSE}
+table1(~石棉+镉+镍+砷+氡+氯乙烯+X射线+苯|CEA,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与不同职业暴露史之间的关联') 
+table1(~石棉+镉+镍+砷+氡+氯乙烯+X射线+苯|AFP,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F,caption='AFP与不同职业暴露史之间的关联') 
+table1(~石棉+镉+镍+砷+氡+氯乙烯+X射线+苯|CA199,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与不同职业暴露史之间的关联') 
+table1(~石棉+镉+镍+砷+氡+氯乙烯+X射线+苯|CA125,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F,caption='CA125与不同职业暴露史之间的关联') 
+table1(~石棉+镉+镍+砷+氡+氯乙烯+X射线+苯|CA153,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA153与不同职业暴露史之间的关联') 
+table1(~石棉+镉+镍+砷+氡+氯乙烯+X射线+苯|PG,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与不同职业暴露史之间的关联') 
+table1(~石棉+镉+镍+砷+氡+氯乙烯+X射线+苯|HBsAg,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与不同职业暴露史之间的关联') 
+```
+#### 二、不同肿瘤标志物用于肿瘤初筛的效果评价   
+**2.1 单一肿瘤标志物用于肿瘤初筛的效果评价**  
+```{r message=FALSE,warning=FALSE}
+#只针对于所有癌症
+plot.roc(baseline_compare$CA,baseline_compare$CEA_contin,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CEA诊断癌症')
+plot.roc(baseline_compare$CA,baseline_compare$AFP_contin,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='AFP诊断癌症')
+plot.roc(baseline_compare$CA,baseline_compare$CA199_contin,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CA199诊断癌症')
+
+#针对于妇科癌症
+baseline_compare_female%>%filter(CA_type_female!=2)%>%roc(CA_type_female,CA125_contin)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CA125诊断妇科癌症')
+baseline_compare_female%>%filter(CA_type_female!=2)%>%roc(CA_type_female,CA153_contin)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CA153诊断妇科癌症')
+#乳腺癌
+baseline_compare_female2%>%filter(CA_type!='宫颈癌' | CA_type!='输卵管癌' | CA_type!='子宫内膜癌')%>%roc(CA_type_female,CA125_contin)%>%plot(add=F,legacy.axes=T,las=1,col='red',print.auc=T,print.thres=T,main='CA125诊断乳腺癌')
+baseline_compare_female2%>%filter(CA_type!='宫颈癌' | CA_type!='输卵管癌' | CA_type!='子宫内膜癌')%>%roc(CA_type_female,CA153_contin)%>%plot(add=F,legacy.axes=T,las=1,col='red',print.auc=T,print.thres=T,main='CA153诊断乳腺癌')
+#肺癌
+baseline_compare%>%filter(CA_type=='肺癌' | CA_type=='' )%>%transmute(CA=ifelse(CA_type=='肺癌',1,0),CEA=CEA_contin,CA199=CA199_contin)%>%roc(CA,CEA)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CEA诊断肺癌')
+baseline_compare%>%filter(CA_type=='肺癌' | CA_type=='' )%>%transmute(CA=ifelse(CA_type=='肺癌',1,0),CEA=CEA_contin,CA199=CA199_contin)%>%roc(CA,CA199)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CA199诊断肺癌')
+#肝癌
+baseline_compare%>%filter(CA_type=='肝癌' | CA_type=='' )%>%transmute(CA=ifelse(CA_type=='肝癌',1,0),CEA=CEA_contin,CA199=CA199_contin,AFP=AFP_contin)%>%roc(CA,CEA)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CEA诊断肝癌')
+baseline_compare%>%filter(CA_type=='肝癌' | CA_type=='' )%>%transmute(CA=ifelse(CA_type=='肝癌',1,0),CEA=CEA_contin,CA199=CA199_contin,AFP=AFP_contin)%>%roc(CA,CA199)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CA199诊断肝癌')
+baseline_compare%>%filter(CA_type=='肝癌' | CA_type=='' )%>%transmute(CA=ifelse(CA_type=='肝癌',1,0),CEA=CEA_contin,CA199=CA199_contin,AFP=AFP_contin)%>%roc(CA,AFP)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='AFP诊断肝癌')
+#胃癌
+baseline_compare%>%filter(CA_type=='胃癌' | CA_type=='' )%>%transmute(CA=ifelse(CA_type=='胃癌',1,0),CEA=CEA_contin,CA199=CA199_contin,AFP=AFP_contin)%>%roc(CA,CA199)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CA199诊断胃癌')
+baseline_compare%>%filter(CA_type=='胃癌' | CA_type=='' )%>%transmute(CA=ifelse(CA_type=='胃癌',1,0),CEA=CEA_contin,CA199=CA199_contin,AFP=AFP_contin)%>%roc(CA,CEA)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CEA诊断胃癌')
+baseline_compare%>%filter(CA_type=='胃癌' | CA_type=='' )%>%transmute(CA=ifelse(CA_type=='胃癌',1,0),PG1=PG1_contin,PGR=PGR_contin)%>%roc(CA,PG1)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='PG1诊断胃癌')
+baseline_compare%>%filter(CA_type=='胃癌' | CA_type=='' )%>%transmute(CA=ifelse(CA_type=='胃癌',1,0),PG1=PG1_contin,PGR=PGR_contin)%>%roc(CA,PGR)%>%plot(add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='PGR诊断胃癌')
+##
+```
+**2.2 多种肿瘤标志物联合用于肿瘤筛查的效果评价**   
+```{r message=FALSE,warning=FALSE}
+plot.roc(baseline_compare$CA,baseline_compare$CEA_contin+baseline_compare$AFP_contin,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CEA+AFP联合诊断癌症')
+plot.roc(baseline_compare$CA,baseline_compare$CEA_contin+baseline_compare$CA199_contin,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CEA+CA199联合诊断癌症')
+plot.roc(baseline_compare$CA,baseline_compare$AFP_contin+baseline_compare$CA199_contin,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='AFP+CA199联合诊断癌症')
+plot.roc(baseline_compare$CA,baseline_compare$CEA_contin+baseline_compare$AFP_contin+baseline_compare$CA199_contin,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CEA+AFP+CA199联合诊断癌症')
+#针对妇科癌症
+plot.roc(baseline_compare_female2$CA_type_female,baseline_compare_female2$CA125_contin+baseline_compare_female2$CA153_contin,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CA125+CA153联合诊断妇科癌症')
+plot.roc(baseline_compare_female2$CA_type_female,baseline_compare_female2$CA125_contin+baseline_compare_female2$CA153_contin+baseline_compare_female2$CEA_contin,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,main='CA125+CA153+CEA联合诊断妇科癌症')
+```
+***  
+#### 三、不同肿瘤标志物联合危险因素用于肿瘤初筛的效果评价    
+
+
+
+
+
+
+
+
