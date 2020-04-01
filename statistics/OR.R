@@ -1,5 +1,5 @@
 logit<-function(y,x,data){
-  #单因素
+  #单因素 
   result1<-data.frame()
   for(i in x){
     formula_uni<-as.formula(paste(y,'~', i))
