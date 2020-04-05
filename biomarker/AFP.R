@@ -1,16 +1,25 @@
 rm(list=ls())
 library(ggstatsplot)
+library(boot)
 #读取数据
 source('~/Rcode/biomarker/data.R')
 source('~/Rcode/statistics/derout.R')
-#--1包年缺失值查看
-summary(biomarker[which(biomarker$smoking>1),'baonian'])
-#--2baonian极端值查看
-outlier_func(x=biomarker$baonian,id=biomarker$ID_BLAST)
-#--检查或剔除极端值或缺失值
-#AFP
-outlier_func(biomarker$AFP,biomarker$ID_BLAST)
-#---------------------------------------------------------------------------------------
+biomarker2<-biomarker%>%filter(!is.na(AFP))
+biomarker3<-biomarker2%>%filter(AFP<=quantile(AFP,0.75)+IQR(AFP) & AFP>=quantile(AFP,0.25)-IQR(AFP))
+###frequency
+freq<-percent_value(biomarker$AFP)
+freq
+#年龄---------------------------------------------------------------------------------------
+#相关性分析
+bs<-function(formula,data,indices){
+  d<-data[indices,]
+  fit<-lm(formula,data=d)
+  return(coef(fit))
+}
+results<-boot(data=biomarker2,statistic = bs,R=1000,formula=CEA~age)
+print(results)
+plot(results,index=2)
+boot.ci(results,type='bca',index=2)
 #年龄(分别做一次剔除异常值和不剔除异常值的情况)
 biomarker2%>%transmute(AFP=log(AFP),age=age,age_group=age_group)%>%
   ggscatterstats(                                            # dataframe from which variables are taken
@@ -80,13 +89,21 @@ plot.smoking<-biomarker2%>%transmute(AFP=log(AFP),smoking=factor(smoking,labels=
   )   
 combine_plots(
   plot.smoking,plot.smoking1,
-  nrow = 2,
+  nrow = 1,
   labels = c("(a)", "(b)"),
   title.text = " ",
   caption.text = " ",
   title.size = 14,
   caption.size = 12
 )
+#baonian 
+outlier_func(biomarker$baonian,biomarker$ID_BLAST)#295个极端值
+outlier_func(biomarker$baonian2,biomarker$ID_BLAST)#0个极端值
+ggplot(data=biomarker,aes(x=baonian2))+geom_histogram(binwidth=2,fill='lightblue',color='black')
+summary(biomarker$baonian);summary(biomarker$baonian2)
+ggplot(data=biomarker3,aes(x=baonian2,y=log(AFP)))+geom_point()+geom_smooth(method='lm')
+
+
 
 #BMI
 biomarker3%>%transmute(AFP=log(AFP),bmi=bmi)%>%
@@ -130,8 +147,8 @@ plot.bmi1<-biomarker3%>%transmute(AFP=log(AFP),bmi_group=factor(bmi_group,labels
     ggtheme = ggthemes::theme_tufte(),
     package = "ggsci",
     palette = "default_jco",
-    title = "Relationship between AFP and smoking(Drop the outlier records)"
-    #title = "Relationship between AFP and smoking(Drop the missing records)",
+    title = "Relationship between AFP and BMI(Drop the outlier records)"
+    #title = "Relationship between AFP and BMI(Drop the missing records)",
     
   )  
 plot.bmi2<-biomarker2%>%transmute(AFP=log(AFP),bmi_group=factor(bmi_group,labels = c('Lower','Normal','overweight','besity')))%>%
@@ -149,13 +166,13 @@ plot.bmi2<-biomarker2%>%transmute(AFP=log(AFP),bmi_group=factor(bmi_group,labels
     ggtheme = ggthemes::theme_tufte(),
     package = "ggsci",
     palette = "default_jco",
-    #title = "Relationship between AFP and smoking(Drop the outlier records)",
-    title = "Relationship between AFP and smoking(Drop the missing records)",
+    #title = "Relationship between AFP and BMI(Drop the outlier records)",
+    title = "Relationship between AFP and BMI(Drop the missing records)",
     
   )   
 combine_plots(
-  plot.bmi1,plot.bmi2,
-  nrow = 2,
+  plot.bmi2,plot.bmi1,
+  nrow = 1,
   labels = c("(a)", "(b)"),
   title.text = " ",
   caption.text = " ",
@@ -207,8 +224,33 @@ combine_plots(
   title.size = 14,
   caption.size = 12
 )
+#stratified by sex
+biomarker2%>%transmute(AFP=log(AFP),alcohol=factor(alcohol,labels=c('NO','YES')),sex=factor(sex,labels=c('man','woman')))%>%filter(!is.na(alcohol))%>%
+  ggboxplot(x='alcohol',y='AFP',add='jitter',add.params = list(size=0.4),facet.by = 'sex')+
+  stat_compare_means(method='t.test')
 
-
+biomarker3%>%transmute(AFP=log(AFP),alcohol=factor(alcohol,labels=c('NO','YES')),sex=factor(sex,labels=c('man','woman')))%>%filter(!is.na(alcohol))%>%
+  grouped_ggbetweenstats(
+  x = alcohol,
+  y = AFP,
+  grouping.var = sex,
+  xlab = "alcohol",
+  ylab = "log(AFP)",
+  k = 2,
+  nboot = 10,
+  effsize.type = "unbiased", # type of effect size (unbiased = omega)
+  partial = FALSE, # partial omega or omega?
+  ggtheme = ggthemes::theme_tufte(),
+  package = "ggsci",
+  palette = "default_jco",
+  #outlier.tagging = TRUE,
+  ggstatsplot.layer = FALSE,
+  messages = FALSE,bf.message = FALSE,
+  # arguments relevant for ggstatsplot::combine_plots
+  title.text = "the relationship between AFP and alcohol when stratifid by sex",
+  nrow = 1,
+  labels = c("(a)", "(b)")
+)
 #疾病史(糖尿病，高血压，高血脂，冠心病，偏头疼)(偏头疼有意义)(剔除异常值)
 biomarker3%>%transmute(AFP=log(AFP),
                        Diabetes=factor(Disea28,labels=c('NO','YES')),
@@ -269,6 +311,10 @@ biomarker2%>%transmute(AFP=log(AFP),
     title.text = "The relationship between AFP and Disease(Drop missing records)",
     nrow = 3,
   )
+##
+
+
+
 ##肝病与AFP的关系
 biomarker3%>%transmute(AFP=log(AFP),
                        polyp=factor(Disea7,labels=c('NO','YES')),
@@ -345,6 +391,30 @@ combine_plots(
   title.size = 14,
   caption.size = 12
 )
+#性别分层
+biomarker2%>%transmute(AFP=log(AFP),HBsAg=factor(HBsAg_group,labels=c('NO','YES')),sex=factor(sex,labels=c('man','woman')))%>%
+  grouped_ggbetweenstats(
+    x = HBsAg,
+    y = AFP,
+    grouping.var = sex,
+    xlab = "HBsAg",
+    ylab = "log(AFP)",
+    k = 2,
+    nboot = 10,
+    effsize.type = "unbiased", # type of effect size (unbiased = omega)
+    partial = FALSE, # partial omega or omega?
+    ggtheme = ggthemes::theme_tufte(),
+    package = "ggsci",
+    palette = "default_jco",
+    #outlier.tagging = TRUE,
+    ggstatsplot.layer = FALSE,
+    messages = FALSE,bf.message = FALSE,
+    # arguments relevant for ggstatsplot::combine_plots
+    title.text = "the relationship between AFP and HBsAg when stratifid by sex",
+    nrow = 1,
+    labels = c("(a)", "(b)")
+  )
+
 #afp分类
 biomarker2%>%transmute(AFP=AFP_pos,HBsAg=HBsAg_group)%>%
     ggpiestats(
