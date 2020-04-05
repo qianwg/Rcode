@@ -305,7 +305,7 @@ p_agemenopau2<-biomarker2%>%transmute(CA153=log(CA153),agemenopau=agemenopau)%>%
     ysize = 1,                                                   
     type = "pearson",nboot=5,                                         
     title = "Relationship between CA153 and age of menopause(Drop the missing records)",
-    messages = FALSE
+    messages = FALSE,bf.message = FALSE
   )
 combine_plots(
   p_agemenopau1,p_agemenopau2,
@@ -373,7 +373,7 @@ biomarker3%>%transmute(agemenarch=agemenarch,CA153=log(CA153))%>%
     xsize = 1,                                                   
     ysize = 1,                                                   
     type = "pearson",                                            
-    title = "Relationship between CA153 and age of menarche",
+    title = "Relationship between CA153 and age of menarche(Drop the outlier records)",
     messages = FALSE
   )
 #绝经年龄-初潮年龄
@@ -395,9 +395,9 @@ biomarker3%>%transmute(difference=agemenopau-agemenarch,CA153=log(CA153))%>%
     xalpha = 0.5,                                                
     yalpha = 0.75,                                              
     xsize = 1,                                                   
-    ysize = 1,                                                   
+    ysize = 1,nboot=5,                                                 
     type = "pearson",                                            
-    title = "Relationship between CA153 and age of difference",
+    title = "Relationship between CA153 and age of difference(Drop the outlier records)",
     messages = FALSE
   )
 #手术史
@@ -418,7 +418,7 @@ biomarker3%>%transmute(Sterlization=factor(sterilizat,labels=c('NO','YES')),
     package = "ggsci",
     palette = "default_jco",
     ggstatsplot.layer = FALSE,
-    messages = FALSE,
-    title.text = "The relationship between CA153 and surgery",
+    messages = FALSE,bf.message = FALSE,
+    title.text = "The relationship between CA153 and surgery(Drop the outlier records)",
     nrow = 3,
   )
