@@ -1,3 +1,4 @@
+library(ggpubr)
 Detect_Outliers <- function(x)
 {
   ## Check if data is numeric in nature
