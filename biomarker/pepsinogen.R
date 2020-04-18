@@ -4,186 +4,224 @@ library(openxlsx)
 library(glmnet)
 library(tidyverse)
 library(randomForest)
+library(table1)
 library(grpreg)
 library(knitr)
 library(kableExtra)
-#全部做过PG的人群
-biomarker<-read.xlsx('~/data/biomarker/Biomarker+baseline(2017+18+19).xlsx',detectDates = TRUE)
-biomarker<-biomarker%>%filter(!is.na(PGI))
-#做过胃镜有病理结果的
-gastroscopy<-read.xlsx('~/data/biomarker/PG_gastric.xlsx',sheet=3)
-gastroscopy%>%group_by(病理结果2)%>%summarise(mean=mean(PG1))
+library(ggstatsplot)
+library(survival)
+library(dplyr)
+library(coin)
+library(MatchIt)
 ###2020/4/2
 #人群特征及其影响因素
 source('~/Rcode/statistics/OR.R')
 source('~/Rcode/statistics/data_summary.R')
+my.render.cat <- function(x) {
+  c("", sapply(stats.default(x), function(y) with(y,
+                                                  sprintf("%d (%0.2f %%)", FREQ, PCT))))
+}
 #读取数据
-biomarker<-import('~/data/biomark2017-2019(剔除自身癌).sav')
-pepsinogen<-biomarker%>%filter(!is.na(PGI))%>%transmute(
-  PG_pos=factor(ifelse(PGI<=70 &  PG_ratio<=3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
-  PG1=PGI,PG2=PGII,PGR=PG_ratio,
-  FATH_sim=ifelse(cancerFH==2 | !is.na(CATPFath) |!is.na(CATPMoth) | !is.na(CATPBrot) |
-                    !is.na(Catpbrot1) |!is.na(Catpbrot2)| !is.na(Catpsist1) | !is.na(CATPSist) |
-                    !is.na(Catpsist2) |!is.na(CATPChil) | !is.na(Catpchil1) | !is.na(Catpchil2),1,0),
-  FATH_sim=ifelse(is.na(FATH_sim),0,FATH_sim),
-  lung_sim=ifelse(CATPFath==34 | CATPMoth==34 | CATPBrot==34 | Catpbrot1==34 |Catpbrot2==34 |
-                    CATPSist==34 | Catpsist1==34 | Catpsist2==34 | CATPChil==34 | Catpchil1==34 | Catpchil2==34,1,0),
-  lung_sim=ifelse(is.na(lung_sim),0,lung_sim),
-  breast_sim=ifelse(CATPMoth==47 |  CATPSist==47 | Catpsist1==47 | Catpsist2==47 | CATPChil==47 |                            Catpchil2==47,1,0),
-  breast_sim=factor(ifelse(is.na(breast_sim),0,breast_sim),levels=c(0,1),labels=c('否','是')),
-  liver_sim=ifelse(CATPFath==24 | CATPMoth==24 | CATPBrot==24 | Catpbrot1==24 |Catpbrot2==24 |
-                     CATPSist==24 | Catpsist1==24 | Catpsist2==24 | CATPChil==24 |                               Catpchil1==24 | Catpchil2==24,1,0),
-  liver_sim=factor(ifelse(is.na(liver_sim),0,liver_sim),levels=c(0,1),labels=c('否','是')),
-  gastric_sim=ifelse(CATPFath==16 | CATPMoth==16 | CATPBrot==16 | Catpbrot1==16 |Catpbrot2==16 |
-                       CATPSist==16 | Catpsist1==16 | Catpsist2==16 | CATPChil==16 |                               Catpchil1==16 | Catpchil2==16,1,0),
-  gastric_sim=ifelse(is.na(gastric_sim),0,gastric_sim),
-  age_risk=factor(ifelse(age<=49,0,ifelse(age>=60,2,1))),
-  sex_risk=ifelse(sex_check==1,0,1),
-  marriage_risk=case_when(
-    marriag==1 ~ 1,
-    marriag==2 ~ 2,
-    marriag==3  | marriag==4 ~ 3
-  ),
-  marriage_risk=factor(marriage_risk,levels = c(1,2,3),labels=c('已婚','未婚','离婚或丧偶')),
-  education_risk=case_when(
-    educati==1 | educati==2 | educati==3 ~ 1,
-    educati==4 ~ 2,
-    educati==5 | educati==6 ~ 3,
-  ),
-  education_risk=factor(education_risk,levels=c(1,2,3),labels=c('初中及以下','高中/中专/技校','大学及以上')),
-  income_risk=factor(income,levels = c(1,2,3,4),labels=c('<3000','3000-4999','5000-9999','>10000')),
-  employm_risk=factor(employm,levels=c(1,2,3,4),labels=c('在业','离退休','失业/下岗/待业','家务/无业')),
-  blood_risk=factor(ifelse(is.na(bloodtp),5,bloodtp),levels = c(1,2,3,4,5),labels=c('A','B','O','AB','不详')),
-  smk_risk=case_when(
-    smoking==1 ~ 0,
-    smoking==3 ~ 1,
-    smoking==2 ~ 2,
-  
-  ),
-  smk_risk=ifelse(is.na(smk_risk),0,smk_risk),
-  #psmk_risk=case_when(
-  #  passivesmk==1 ~ 0,
-  #  passivesmk==2 & psmkyrs<10 ~ 1,
-  #  passivesmk==2 & psmkyrs>=10 ~ 2,
-  #),
-  psmk_risk=passivesmk,
-  psmk_risk=ifelse(is.na(psmk_risk),0,psmk_risk),
-  BMI_risk=factor(ifelse(10000*weight/(height*height)<24,0,ifelse(10000*weight/(height*height)<28,1,2))),
-  #饮食
-  alcohol_risk=ifelse(alcohol==2 & !is.na(alcohol),1,0),
-  tea_risk=ifelse(tea==2 & !is.na(tea),1,0),
-  yogurt_risk=ifelse(yogurt==2 & !is.na(yogurt),1,0),
-  veget_risk=ifelse(veget==2 & !is.na(veget),1,0),
-  fruit_risk=ifelse(fruit==2 & !is.na(fruit),1,0),
-  grain_risk=ifelse(grain==2 & !is.na(grain),1,0),
-  egg_risk=ifelse(egg==2 & !is.na(egg),1,0),
-  cereal_risk=ifelse(cereal==2 & !is.na(cereal),1,0),
-  beans_risk=ifelse(beans==2 & !is.na(beans),1,0),
-  nuts_risk=ifelse(nuts==2 & !is.na(nuts),1,0),
-  fungus_risk=ifelse(fungus==2 & !is.na(fungus),1,0),
-  #饮食偏好
-  salty_risk=ifelse(salty==2 & !is.na(salty),1,0),#偏咸
-  #饮食喜好
-  salted_risk=ifelse(salted==2 & !is.na(salted),1,0),#喜好腌制食品
-  #体育锻炼
-  exercise_risk=ifelse(exercise==2 & !is.na(exercise),1,0),
-  jog_risk=ifelse(jog==2 & !is.na(jog),1,0),#快走
-  taichi_risk=ifelse(taichi==2 & !is.na(taichi),1,0),#太极
-  fitdance_risk=ifelse(fitdance==2 & !is.na(fitdance),1,0),#广场舞
-  yoga_risk=ifelse(yoga==2 & !is.na(yoga),1,0),#瑜伽
-  swim_risk=ifelse(swim==2 & !is.na(swim),1,0),#游泳
-  run_risk=ifelse(run==2 & !is.na(run),1,0),#跑步
-  ball_risk=ifelse(ball==2 & !is.na(ball),1,0),#球类
-  apparatus_risk=ifelse(apparatus==2 & !is.na(apparatus),1,0),#器械
-  #静态时间
-  sedentaryh_risk=ifelse(is.na(sedentaryh),1,sedentaryh),
-  #手机使用时间
-  cellphoneh_risk=factor(cellphoneh,levels=c(1,2,3,4),labels=c('少于3小时','3-6小时','7-12小时','13小时及以上')),
-  #基础性疾病
-  disea1_risk=ifelse(Disea1==2 & !is.na(Disea1),1,0),#弥漫性肺间质纤维化
-  disea2_risk=ifelse(Disea2==2 & !is.na(Disea2),1,0),#肺结核
-  disea3_risk=ifelse(Disea3==2 & !is.na(Disea3),1,0),#慢性支气管炎
-  disea4_risk=ifelse(Disea4==2 & !is.na(Disea4),1,0),#肺气肿
-  disea5_risk=ifelse(Disea5==2 & !is.na(Disea5),1,0),#哮喘支气管扩张
-  disea6_risk=ifelse(Disea6==2 & !is.na(Disea6),1,0),#矽肺或尘肺
-  disea7_risk=ifelse(Disea7==2 & !is.na(Disea7),1,0),#胆囊息肉
-  disea8_risk=ifelse(Disea8==2 & !is.na(Disea8),1,0),#胆结石
-  disea9_risk=ifelse(Disea9==2 & !is.na(Disea9),1,0),#脂肪肝
-  disea10_risk=ifelse(Disea10==2 & !is.na(Disea10),1,0),#肝硬化
-  disea11_risk=ifelse(Disea11==2 & !is.na(Disea11),1,0),#慢性乙型肝炎
-  disea12_risk=ifelse(Disea12==2 & !is.na(Disea12),1,0),#慢性丙型肝炎
-  disea13_risk=ifelse(Disea13==2 & !is.na(Disea13),1,0),#血吸虫病感染史
-  disea14_risk=ifelse(Disea14==2 & !is.na(Disea14),1,0),#食管或胃上皮内瘤变
-  disea15_risk=ifelse(Disea15==2 & !is.na(Disea15),1,0),#十二指肠溃疡
-  disea16_risk=ifelse(Disea16==2 & !is.na(Disea16),1,0),#Barrett食管
-  disea17_risk=ifelse(Disea17==2 & !is.na(Disea17),1,0),#萎缩性胃炎
-  disea18_risk=ifelse(Disea18==2 & !is.na(Disea18),1,0),#胃溃疡
-  disea19_risk=ifelse(Disea19==2 & !is.na(Disea19),1,0),#胃息肉
-  disea20_risk=ifelse(Disea20==2 & !is.na(Disea20),1,0),#幽门螺杆菌感染史
-  disea21_risk=ifelse(Disea21==2 & !is.na(Disea21),1,0),#EB病毒感染史
-  disea22_risk=ifelse(Disea22==2 & !is.na(Disea22),1,0),#胃粘膜异性增生
-  disea23_risk=ifelse(Disea23==2 & !is.na(Disea23),1,0),#胃肠上皮化生
-  disea24_risk=ifelse(Disea24==2 & !is.na(Disea24),1,0),#残胃
-  disea25_risk=ifelse(Disea25==2 & !is.na(Disea25),1,0),#乳腺小叶不典型增生
-  disea26_risk=ifelse(Disea26==2 & !is.na(Disea26),1,0),#乳腺导管不典型增生
-  disea27_risk=ifelse(Disea27==2 & !is.na(Disea27),1,0),#乳腺小叶原位癌
-  disea28_risk=ifelse(Disea28==2 & !is.na(Disea28),1,0),#糖尿病
-  disea29_risk=ifelse(Disea29==2 & !is.na(Disea29),1,0),#高血压
-  disea30_risk=ifelse(Disea30==2 & !is.na(Disea30),1,0),#高血脂
-  disea31_risk=ifelse(Disea31==2 & !is.na(Disea31),1,0),#冠心病
-  disea32_risk=ifelse(Disea32==2 & !is.na(Disea32),1,0),#中风
-  #职业暴露
-  cadmium_risk=ifelse(cadmium==2,1,0),#镉
-  asbestos_risk=ifelse(asbestos==2,1,0),#石棉
-  nickel_risk=ifelse(nickel==2,1,0),#镍
-  arsenic_risk=ifelse(arsenic==2,1,0),#砷
-  radon_risk=ifelse(radon==2,1,0),#氡
-  chloroethy_risk=ifelse(chloroethy==2,1,0),#氯乙烯
-  Xray_risk=ifelse(Xray==2,1,0),#X射线
-  benzene_risk=ifelse(benzene==2,1,0),#苯
-)%>%transmute(PG1=PG1,
-              癌症家族史=FATH_sim,胃癌家族史=gastric_sim,
-              年龄=age_risk,性别=sex_risk,婚姻=marriage_risk,教育=education_risk,
-              家庭收入=income_risk,BMI=BMI_risk,饮酒=alcohol_risk,喝茶=tea_risk,酸奶=yogurt_risk,
-              吸烟=factor(smk_risk),被动吸烟=factor(psmk_risk),
-              蔬菜=veget_risk,水果=fruit_risk,谷类=grain_risk,鸡蛋=egg_risk,偏咸=salty_risk,腌制=salted_risk,
-              杂粮=cereal_risk,豆类=beans_risk,坚果=nuts_risk,
-              静态时间=factor(sedentaryh_risk),手机使用时间=cellphoneh_risk,
-              十二指肠溃疡=disea15_risk,
-              胃溃疡=disea18_risk,胃息肉=disea19_risk,幽门螺杆菌感染史=disea20_risk,
-              胃粘膜异性增生=disea22_risk,胃肠上皮化生=disea23_risk,残胃=disea24_risk,糖尿病=disea28_risk,高血压=disea29_risk,
-              高血脂=disea30_risk,冠心病=disea31_risk,中风=disea32_risk
-)%>%filter(PG1!=200)
+source('~/Rcode/biomarker/biomarker_data.R')
+#PG1,PG2,PGR的基本分布
+ggplot(data=pepsinogen,aes(x=log(PG1),y=..density..))+geom_histogram(bins=30,color='black',fill='green')
+ggplot(data=pepsinogen,aes(x=log(PG2),y=..density..))+geom_histogram(bins=30,color='black',fill='green')
+ggplot(data=pepsinogen,aes(x=log(PGR),y=..density..))+geom_histogram(bins=30,color='black',fill='green')
+ks.test(pepsinogen$PG1,'pnorm')
+ks.test(pepsinogen$PG2,'pnorm')
+ks.test(pepsinogen$PGR,'pnorm')
 #基本描述
-as.data.frame(do.call(rbind,apply(pepsinogen[which(pepsinogen$PG1!=200),c('PG1','PG2','PGR')],2,data_summary)))
-#
-variable<-c("癌症家族史","胃癌家族史" ,"年龄","性别","家庭收入", "教育", "婚姻",
-            "BMI","吸烟" ,"被动吸烟","静态时间","手机使用时间" ,"饮酒" ,"喝茶" , "酸奶", "蔬菜","水果"  ,          
-            "谷类" ,"鸡蛋","杂粮","豆类","坚果" , "偏咸","腌制" ,
-            "十二指肠溃疡","胃溃疡","胃息肉","幽门螺杆菌感染史", "胃粘膜异性增生","胃肠上皮化生",
-            "残胃" ,"糖尿病", "高血压" ,"高血脂" ,"冠心病" ,"中风" )
-logit(y='PG_pos',x=c("癌症家族史","胃癌家族史" ,"年龄","性别","家庭收入", "教育", "婚姻",
-                      "BMI","吸烟" ,"被动吸烟","静态时间","手机使用时间" ,"饮酒" ,"喝茶" , "酸奶", "蔬菜","水果"  ,          
-                     "谷类" ,"鸡蛋","杂粮","豆类","坚果","偏咸","腌制" ,
-                   "十二指肠溃疡","胃溃疡","胃息肉","幽门螺杆菌感染史", "胃粘膜异性增生","胃肠上皮化生",
-                     "残胃" ,"糖尿病", "高血压" ,"高血脂" ,"冠心病" ,"中风"),data=pepsinogen)
-summary(glm(PG_pos~.,data=pepsinogen[,c('PG_pos',variable)],family = 'binomial'))
+pepsinogen2<-pepsinogen
+pepsinogen2[,-1:-8]<-data.frame(apply(pepsinogen2[,-1:-8],2,as.factor))
+str(pepsinogen2)
+table1(~ 胃癌家族史+年龄+性别+家庭收入+教育+婚姻+BMI+吸烟+
+         手机使用时间+饮酒+喝茶+酸奶+咖啡+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+大蒜+菌类+油炸+烧烤+
+         熏制+酱制+偏咸+腌制+
+         十二指肠溃疡+胃溃疡+胃息肉+ 幽门螺杆菌感染史+癌前病变+
+         残胃+糖尿病+高血压+高血脂+冠心病 | PG_pos, data=pepsinogen2,render.categorical=my.render.cat)
+a<-as.data.frame(do.call(rbind,apply(pepsinogen[which(pepsinogen$PG1!=200),c('PG1','PG2','PGR')],2,data_summary2)))
+export(a,'~/PG_summary.xlsx')
+variable<-c("胃癌家族史" ,"年龄","性别","家庭收入", "教育", "婚姻",
+            "BMI","吸烟" ,"手机使用时间" ,"饮酒" ,"喝茶" ,
+            "十二指肠溃疡","胃溃疡","胃息肉","幽门螺杆菌感染史","癌前病变",
+            "残胃" ,"糖尿病", "高血压" ,"高血脂" ,"冠心病")
+variable2<-c("胃癌家族史" ,"年龄","家庭收入", "教育", "婚姻",
+             "BMI","吸烟" ,"手机使用时间" ,"饮酒" ,"喝茶" ,'酸奶','咖啡','蔬菜','水果',
+             '谷类','鸡蛋','杂粮','豆类','坚果','大蒜','菌类','油炸','烧烤','偏咸',
+             "十二指肠溃疡","胃溃疡","胃息肉","幽门螺杆菌感染史","癌前病变",
+             "残胃" ,"糖尿病", "高血压" ,"高血脂" ,"冠心病")
+##对于PG(连续性,把PG1>200的剔除)
+#单因素分析
+#PG1
+p<-list()
+for(i in variable){
+  formula_uni<-as.formula(paste('PG1','~', i))
+  if(length(table(pepsinogen2[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PG2
+p2<-list()
+for(i in variable){
+  formula_uni<-as.formula(paste('PG2','~', i))
+  if(length(table(pepsinogen2[,i]))==2){
+    p2[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+  else{
+    p2[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+}
+do.call(rbind,p2)
+#PGR
+pr<-list()
+for(i in variable){
+  formula_uni<-as.formula(paste('PGR','~', i))
+  if(length(table(pepsinogen2[,i]))==2){
+    pr[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+  else{
+    pr[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+}
+do.call(rbind,pr)
+#均值比较
+#PG1
+means_PG1<-pepsinogen2%>%pivot_longer(cols=variable,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))
+print(means_PG1,n=85)
+#PG2
+means_PG2<-pepsinogen2%>%pivot_longer(cols=variable,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(median=median(PG2),Q1=quantile(PG2,0.25),Q3=quantile(PG2,0.75))
+print(means_PG2,n=85)
+export(means_PG2,'~/means_PG2.xlsx')
+#PGR
+means_PGR<-pepsinogen2%>%pivot_longer(cols=variable,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(median=median(PGR),Q1=quantile(PGR,0.25),Q3=quantile(PGR,0.75))
+print(means_PGR,n=85)
+export(means_PGR,'~/means_PGR.xlsx')
+##多水平的两两比较
+library(PMCMR)
+pepsinogen2%>%
+  ggbetweenstats(
+    x = BMI,
+    y =PG1,
+    nboot = 10,type='np',
+    messages = FALSE,bf.message=FALSE,
+    pairwise.comparisons = TRUE, 
+    pairwise.display = "significant", 
+    pairwise.annotation = "p.value", 
+    p.adjust.method = "fdr", 
+    ggtheme = ggthemes::theme_tufte(),
+    package = "ggsci",
+    palette = "default_jco"
+  )  
+posthoc.kruskal.nemenyi.test(PG1 ~ BMI, data = pepsinogen2, dist="Tukey")
+#回归
+summary(glm(log(PG1)~.,data=pepsinogen[,c('PG1',variable)]))
+summary(glm(log(PG2)~.,data=pepsinogen[,c('PG2',variable)]))
+summary(glm(log(PGR)~.,data=pepsinogen[,c('PGR',variable)]))
+#lasso
+x1 <- model.matrix(PG1~.,pepsinogen, contrasts.arg = lapply(pepsinogen[ ,sapply(pepsinogen, is.factor)], contrasts, contrasts = FALSE ))
+x1<-x1[,-1]
+y1 <- pepsinogen[, c('PG1')]
+#lasso regression
+model<-glmnet(x1,y1,alpha = 1,family = 'gaussian')
+plot(model,xvar='lambda',label=TRUE)
+model2<-cv.glmnet(x1,y1,alpha=1,family='gaussian',type.measure = 'deviance')
+plot(model2)
+coef(model2,model2$lambda.min)
+coef(model2,model2$lambda.1se)
+#group-lasso
+fit1 <- grpreg(x1, y1, group, penalty="grLasso", family="gaussian")
+plot(fit1)
+cvfit1<- cv.grpreg(x1, y1, group, penalty="grLasso",family='gaussian')
+plot(cvfit1)
+as.matrix(coef(cvfit1,lambda=cvfit1$lambda.min))
+
+##二分类：PG1<=70 & PGR<=3 定义为阳性；
+#multiple logistic regression
+summary(glm(PG_pos~.,data=pepsinogen[,c('PG_pos',variable2)],family = 'binomial'))
+summary(glm(PG_pos~.,data=pepsinogen[which(pepsinogen$性别==1),c('PG_pos',variable2)],family = 'binomial'))
+#单因素
+p2<-list()
+for(i in variable2){
+  y<-pepsinogen[[i]]
+  p2[[i]]<-round(chisq.test(table(y,pepsinogen2$PG_pos))$p.value,3)
+}
+do.call(rbind,p2)
+#多因素
+logit(y='PG_pos',x=c("胃癌家族史" ,"年龄","性别","家庭收入", "教育", "婚姻",
+                     "BMI","吸烟" ,"手机使用时间" ,"饮酒" ,"喝茶" ,'酸奶','咖啡','蔬菜','水果',
+                     '谷类','鸡蛋','杂粮','豆类','坚果','大蒜','菌类','油炸','烧烤','偏咸',
+                     "十二指肠溃疡","胃溃疡","胃息肉","幽门螺杆菌感染史","癌前病变",
+                     "残胃" ,"糖尿病", "高血压" ,"高血脂" ,"冠心病"),data=pepsinogen2)
+logit(y='PG_pos',x=c("胃癌家族史" ,"年龄","家庭收入", "教育", "婚姻",
+                     "BMI","吸烟" ,"手机使用时间" ,"饮酒" ,"喝茶" ,'酸奶','咖啡','蔬菜','水果',
+                     '谷类','鸡蛋','杂粮','豆类','坚果','大蒜','菌类','油炸','烧烤','偏咸',
+                     "十二指肠溃疡","胃溃疡","胃息肉","幽门螺杆菌感染史","癌前病变",
+                     "残胃" ,"糖尿病", "高血压" ,"高血脂" ,"冠心病"),data=subset(pepsinogen,性别==1))
 #向后逐步回归
 step(glm(PG_pos~.,data=pepsinogen[,c('PG_pos',variable)],family = 'binomial'),direction = 'backward')
 ##lasso-logistic
 x <- model.matrix(PG_pos~.,pepsinogen, contrasts.arg = lapply(pepsinogen[ ,sapply(pepsinogen, is.factor)], contrasts, contrasts = FALSE ))
 x<-x[,-1]
 y <- pepsinogen[, c('PG_pos')]
-####lasso回归
+#conditional logistic regression
+#根据性别1：5匹配
+seed(12345)
+m.out<-matchit(PG_pos~性别,data=pepsinogen,exact=c('性别'),ratio=5)
+m.data<-match.data(m.out)
+logit(y='PG_pos',x=c("胃癌家族史","家庭收入", "教育", "婚姻",
+                     "BMI","吸烟" ,"手机使用时间" ,"饮酒" ,"喝茶" ,
+                     "十二指肠溃疡","胃溃疡","胃息肉","幽门螺杆菌感染史","癌前病变",
+                     "残胃" ,"糖尿病", "高血压" ,"高血脂" ,"冠心病"),data=m.data2)
+#根据性别年龄1：5匹配
+set.seed(12345)
+m.out2<-matchit(PG_pos~性别+年龄,data=pepsinogen,method='nearest',exact=c('性别','年龄'),ratio=5)
+m.data2<-match.data(m.out2)
+m.matrix<-m.out2$match.matrix
+m.matrix1<-data.frame(id=row.names(m.matrix),m.matrix[,1:5],row.names = NULL)
+m.matrix2<-m.matrix1%>%pivot_longer(cols = c('X1','X2','X3','X4','X5'),names_to='match_id',values_to = "n")
+m.matrix2$n<-as.character(m.matrix2$n)
+m.matrix2$id<-as.character(m.matrix2$id)
+m.data3<-left_join(m.data2,m.matrix2,by='n')
+m.data3$id<-ifelse(is.na(m.data3$id),m.data3$n,m.data3$id)
+arrange(m.data5[,c('PG_pos','性别','年龄','n','id','m')],id)
+m.data3$id<-as.numeric(m.data3$id)
+m.data3$PG_pos<-ifelse(m.data3$PG_pos==1,2,1)
+#单因素
+m.data4<-m.data3
+m.data4[,-1:-3]<-data.frame(apply(m.data4[,-1:-3],2,as.factor))
+table1(~ 胃癌家族史+年龄+性别+家庭收入+教育+婚姻+BMI+吸烟+
+         手机使用时间+饮酒+喝茶+酸奶+咖啡+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+大蒜+菌类+油炸+烧烤+
+         熏制+酱制+偏咸+腌制+
+         十二指肠溃疡+胃溃疡+胃息肉+ 幽门螺杆菌感染史+癌前病变+
+         残胃+糖尿病+高血压+高血脂+冠心病 | PG_pos, data=m.data4,render.categorical=my.render.cat)
+summary(clogit(PG_pos~残胃+strata(id),m.data3))
+#logstic
+summary(clogit(PG_pos ~胃癌家族史+家庭收入+教育+婚姻+BMI+吸烟+
+                 手机使用时间+饮酒+喝茶+酸奶+咖啡+蔬菜+水果+谷类+鸡蛋+杂粮+
+                 豆类+坚果+大蒜+菌类+油炸+烧烤+偏咸+
+                 十二指肠溃疡+胃溃疡+胃息肉+ 幽门螺杆菌感染史+癌前病变+
+                 残胃+糖尿病+高血压+高血脂+冠心病+ strata(id),m.data3))
+
+
+##分层
+summary(glm(PG_pos~糖尿病,family = 'binomial',data=subset(pepsinogen,性别='女')))
+summary(glm(PG_pos~糖尿病,family = 'binomial',data=subset(pepsinogen,性别='男')))
+#lasso回归
 lasso <- glmnet(x,y, family = "binomial", alpha = 1)
 print(lasso)
 plot(lasso, xvar = "lambda", label = TRUE)
 cv_output<-cv.glmnet(x,y,alpha=1,family='binomial')#lambda
 plot(cv_output)
 best_lam<-cv_output$lambda.min#选择lambda值
-var_coef<-coef(cv_output,s='lambda.min')#系数
-var_coef
-#######group-lasso logistic
+coef(cv_output,s='lambda.min')#系数
+##group-lasso logistic
 group<-c("癌症家族史", "胃癌家族史","年龄", "年龄", "年龄", "性别","婚姻", "婚姻", "婚姻","教育","教育" ,"教育",  
          "家庭收入" ,"家庭收入" ,"家庭收入" ,
          "家庭收入" , "BMI", "BMI", "BMI",      
@@ -199,36 +237,128 @@ plot(fit)
 cvfit<- cv.grpreg(x, y, group, penalty="grLasso",family='binomial')
 plot(cvfit)
 as.matrix(coef(cvfit,lambda=cvfit$lambda.min))
-##随机森林
-set.seed(20200420)
-ind <- sample(2,nrow(pepsinogen),replace = T,prob=c(0.7,0.3))
-traindata <- pepsinogen[ind==1,]
-testdata <- pepsinogen[ind==2,]
-for (i in 1:(ncol(pepsinogen)-1)) {
-  m.mtry <- randomForest(PG_pos~.,data = traindata,mtry = i)
-  err <- mean(m.mtry$err.rate)
-  print(err)
-}
-set.seed(20190809)
-tuned.mtry <- tuneRF(traindata[,-1],traindata[,1],stepFactor = 1.5)
-print(tuned.mtry)
-randmodel <- randomForest(PG_pos~.,data = traindata)
-plot(randmodel)
-randmodel1 <- randomForest(PG_pos~.,data = traindata,ntree=200,importance=T)
-randmodel1
-importance(x=randmodel1)
-varImpPlot(randmodel1,,sort=T,pch=19,main="Feature importance",n.var = 10)
-##对于PG1(连续性)
-summary(glm(PG1~.,data=pepsinogen[,c('PG1',variable)]))
-x1 <- model.matrix(PG1~.,pepsinogen, contrasts.arg = lapply(pepsinogen[ ,sapply(pepsinogen, is.factor)], contrasts, contrasts = FALSE ))
-x1<-x1[,-1]
-y1 <- pepsinogen[, c('PG1')]
-fit1 <- grpreg(x1, y1, group, penalty="grLasso", family="gaussian")
-plot(fit1)
-cvfit1<- cv.grpreg(x1, y1, group, penalty="grLasso",family='gaussian')
-plot(cvfit1)
-as.matrix(coef(cvfit1,lambda=cvfit1$lambda.min))
-select(fit1,'AIC')
+#restricted cubic spline
+library(rms)
+ddist<-datadist(pepsinogen)
+options(datadist='ddist')
+model_rcs<-lrm(PG_pos~rcs(年龄2,4)+糖尿病+吸烟+饮酒,data=pepsinogen)
+plot(Predict(model_rcs,年龄2))
+#女
+pepsinogen_female<-subset(pepsinogen,性别='女')
+ddist1<-datadist(pepsinogen_female)
+options(datadist='ddist1')
+model_rcs2<-lrm(PG_pos~rcs(年龄2,4),data=pepsinogen_female)
+plot(Predict(model_rcs2,年龄2))
+##性别和年龄
+tabla<-with(data=subset(pepsinogen,性别==1),table(年龄,PG_pos))
+prop.table(with(data=subset(pepsinogen,性别==1),table(年龄,PG_pos)),margin=2)
+spineplot(tabla)
+lxl<-lbl_test(tabla)
+statistic(lxl)^2
+#2020-4-13--PG test  and 胃镜检查结果
+gastroscopy<-import('~/data/示范区+做过胃镜的(2020-4-13).xlsx')
+match<-left_join(gastroscopy,pepsinogen,by=c('ID','name'))
+match%>%filter(!is.na(type))%>%
+  ggbetweenstats(
+    x = type,
+    y =PGR,
+    nboot = 10,type='np',
+    messages = FALSE,bf.message=FALSE,
+    pairwise.comparisons = TRUE, 
+    pairwise.display = "significant", 
+    pairwise.annotation = "p.value", 
+    p.adjust.method = "fdr", 
+    ggtheme = ggthemes::theme_tufte(),
+    package = "ggsci",
+    palette = "default_jco"
+  )  
+#区分萎缩性病变和正常或发炎患者
+match2<-left_join(pepsinogen,gastroscopy,by='ID')
+match2$type2<-ifelse(is.na(match2$type),0,1)
+roc_PG1<-roc(match2$type2, match2$PG1,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc_PG2<-roc(match2$type2, match2$PG2,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc_PGR<-roc(match2$type2, match2$PGR,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc_PG1R<-roc(match2$type2, match2$PG1+match2$PGR,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+#曲线下面积的比较
+roc.test(roc_PG1,roc_PG2)
+roc.test(roc_PG1,roc_PGR,method = "bootstrap",boot.n=10000)#p=0.06
+roc.test(roc_PG2,roc_PGR)
+roc.test(roc_PGR,roc_PG1R,method = "bootstrap",boot.n=10000)#p=0.12
+roc.test(roc_PG1,roc_PG1R,method = "bootstrap",boot.n=10000)#p<0.01
+#plot
+plot.roc(match2$type2, match2$PG1,direction='>',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(match2$type2, match2$PG2,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(match2$type2, match2$PGR,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+#plot
+plot.roc(match2$type2, match2$PG1,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="2")
+#lines.roc(match2$type2, match2$PG2,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="3")
+lines.roc(match2$type2, match2$PGR,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="4")
+#lines.roc(match2$type2, match2$PG1+match2$PGR,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="5")
+legend("bottomright",legend=c("PG1, AUC: 0.76(0.66,0.86)", 
+                              "PGR, AUC: 0.84(0.76,0.94)"
+                               ),
+                              col=c("2","3","4","5"),lwd=3,cex=0.6)
+#不同诊断标准的灵敏度和特异度
+library(epiR)
+table<-match2%>%transmute(PG_pos2=ifelse(PG1<=30 & PGR<=3,1,0),
+                          PG_pos3=ifelse(PG1<=40 & PGR<=3,1,0),
+                          PG_pos4=ifelse(PG1<=50 & PGR<=3,1,0),
+                          PG_pos5=ifelse(PG1<=60 & PGR<=3,1,0),
+                          PG_pos6=ifelse(PG1<=70 & PGR<=3,1,0),
+                          PG_pos11=ifelse(PG1<=80 & PGR<=3,1,0),
+                          PG_pos7=ifelse(PG1<=30 | PGR<=3,1,0),
+                          PG_pos8=ifelse(PG1<=40 | PGR<=3,1,0),
+                          PG_pos9=ifelse(PG1<=50 | PGR<=3,1,0),
+                          PG_pos10=ifelse(PG1<=70 & PGR<=6,1,0),
+                          type=type2)
+#PG1<=30 & PGR<=3
+table(table$PG_pos2,table$type)
+epi.tests(as.table(matrix(c(12,167,18,5733), nrow = 2, byrow = TRUE)))
+
+#PG1<=40 & PGR<=3
+table(table$PG_pos3,table$type)
+epi.tests(as.table(matrix(c(18,218,12,5682), nrow = 2, byrow = TRUE)))
+#PG1<=50 & PGR<=3
+table(table$PG_pos4,table$type)
+epi.tests(as.table(matrix(c(20,262,10,5638), nrow = 2, byrow = TRUE)))
+#PG1<=60 & PGR<=3
+table(table$PG_pos5,table$type)
+epi.tests(as.table(matrix(c(22,298,8,5602), nrow = 2, byrow = TRUE)))
+#PG1<=70 & PGR<=3
+table(table$PG_pos6,table$type)
+epi.tests(as.table(matrix(c(24,330,6,5570), nrow = 2, byrow = TRUE)))
+
+#PG1<=30 | PGR<=3
+table(table$PG_pos7,table$type)
+epi.tests(as.table(matrix(c(24,620,6,5280), nrow = 2, byrow = TRUE)))
+#PG1<=40 | PGR<=3
+table(table$PG_pos8,table$type)
+epi.tests(as.table(matrix(c(25,1339,5,4561), nrow = 2, byrow = TRUE)))
+#PG1<=50 | PGR<=3
+table(table$PG_pos9,table$type)
+epi.tests(as.table(matrix(c(26,2392,4,3508), nrow = 2, byrow = TRUE)))
+#PG1<=70 | PGR<=3
+table(table$PG_pos10,table$type)
+epi.tests(as.table(matrix(c(24,1952,6,3948), nrow = 2, byrow = TRUE)))
+#不同诊断标准的检出率情况
+match2%>%transmute(type2=type2,a=ifelse(PG1<=30,1,ifelse(PG1<=40,2,ifelse(PG1<=50,3,ifelse(PG1<=60,4,ifelse(PG1<=70,5,6))))))%>%
+  group_by(type2,a)%>%summarise(n=n())
+match2%>%transmute(type2=type2,a=ifelse(PGR<=2,1,ifelse(PGR<=3,2,ifelse(PGR<=4,3,ifelse(PGR<=5,4,ifelse(PGR<=6,5,6))))))%>%
+  group_by(type2,a)%>%summarise(n=n())
+
+
+#2020-4-13 CA199与PG的相关性分析
+#1连续性变量
+CA199<-biomarker%>%transmute(
+  PG_pos=factor(ifelse(PGI<=70 & PG_ratio<=3,1,0)),
+  PG1=PGI,PG2=PGII,PGR=PG_ratio,
+)
+ggscatter(data=pepsinogen,x='PG1',y='CA199',add='reg.line',add.params = list(color='red'))+stat_cor()
+ggscatter(data=pepsinogen,x='PG2',y='CA199',add='reg.line',add.params = list(color='red'))+stat_cor()
+ggscatter(data=pepsinogen,x='PGR',y='CA199',add='reg.line',add.params = list(color='red'))+stat_cor()
+#分类变量
+prop.table(with(pepsinogen,table(CA199_pos,PG_pos)),margin = 2)
+chisq_test(with(pepsinogen,table(CA199_pos,PG_pos)))
 
 
 
