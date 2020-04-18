@@ -314,13 +314,124 @@ biomarker3%>%transmute(Sterlization=factor(sterilizat,labels=c('NO','YES')),
 #绝经状态与手术方式
 
 
-
-
-
-
-
-
-
+#二分类指标 CA125>=35定义为阳性
+###2020-4-15
+library(car)
+my.render.cat <- function(x) {
+  c("", sapply(stats.default(x), function(y) with(y,
+                                                  sprintf("%d (%0.2f %%)", FREQ, PCT))))
+}
+source('~/Rcode/statistics/OR.R')
+get_coe <- function(the_fit,the_lamb){
+  Coefficients <- coef(the_fit, s = the_lamb)
+  Active.Index <- which(Coefficients != 0)
+  Active.Coefficients <- Coefficients[Active.Index]
+  re <- data.frame(rownames(Coefficients)[Active.Index],Active.Coefficients)
+  re <- data.table('var_names'=rownames(Coefficients)[Active.Index],
+                   'coef'=Active.Coefficients)
+  re$expcoef <- exp(re$coef)
+  return(re[order(expcoef)])
+}
+#连续性指标
+source('~/Rcode/biomarker/data_CA125.R')
+variables<-c("癌症家族史","乳腺癌家族史",      
+             "年龄","就业状况","BMI",              
+             "偏咸","腌制","饮酒","喝茶",             
+             "酸奶","吸烟" ,"被动吸烟", "婚姻",             
+             "教育", "血型","蔬菜","水果",             
+             "谷类","鸡蛋","杂粮","豆类",              
+             "坚果", "菌类","油炸","烧烤",              
+             "熏制","静态时间","手机使用时间","乳腺小叶不典型增生",
+             "乳腺导管不典型增生","乳腺重度不典型增生","乳腺纤维瘤","糖尿病",           
+             "高血压","高血脂","冠心病","中风" ,             
+             "初潮年龄","绝经年龄","口服避孕药","激素治疗",          
+             "人工流产次数",'绝育手术','子宫摘除术','卵巢摘除术')
+#单因素分析(均值比较)
+means_CA125<-CA125%>%pivot_longer(cols=variables,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(CA125),Q1=quantile(CA125,0.25),Q3=quantile(CA125,0.75))
+print(means_CA125,n=107)
+p<-list()
+for(i in variables){
+  formula_uni<-as.formula(paste('CA125','~', i))
+  if(length(table(CA125[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=CA125)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=CA125)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#多因素回归分析
+summary(glm(log(CA125)~.,data=CA125[,c('CA125',variables)]))
+#CA125作为二分类变量(CA125>=35)
+#频率分布
+table1(~癌症家族史+乳腺癌家族史+年龄+家庭收入+就业状况+BMI+偏咸+腌制+饮酒+喝茶+
+         酸奶+吸烟+被动吸烟+婚姻+教育+血型+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+
+         +菌类+油炸+烧烤+熏制+静态时间+手机使用时间+乳腺小叶不典型增生+乳腺导管不典型增生+
+         乳腺重度不典型增生+乳腺纤维瘤+糖尿病+高血压+高血脂+冠心病+中风+初潮年龄+
+         绝经年龄+口服避孕药+激素治疗+人工流产次数+绝育手术+子宫摘除术+卵巢摘除术 | CA125_pos, data=CA125,render.categorical=my.render.cat)
+p2<-list()
+for(i in variables){
+  y<-CA125[[i]]
+  p2[[i]]<-round(chisq.test(table(y,CA125$CA125_pos))$p.value,3)
+}
+do.call(rbind,p2)
+#多因素分析
+#多重共线性检验
+vif_data<-vif(glm(CA125_pos~.,family='binomial',data=CA125[,c('CA125_pos',variables)]))
+vif_data
+sort(vif_data,decreasing = TRUE)
+#logistic回归
+logit(y='CA125_pos',x=c("癌症家族史","乳腺癌家族史",      
+                     "年龄","家庭收入","就业状况","BMI",              
+                     "偏咸","腌制","饮酒","喝茶",             
+                     "酸奶","吸烟" ,"被动吸烟", "婚姻",             
+                     "教育", "血型","蔬菜","水果",             
+                     "谷类","鸡蛋","杂粮","豆类",              
+                     "坚果", "菌类","油炸","烧烤",              
+                     "熏制","静态时间","手机使用时间","乳腺小叶不典型增生",
+                     "乳腺导管不典型增生","乳腺重度不典型增生","乳腺纤维瘤","糖尿病",           
+                     "高血压","高血脂","冠心病","中风" ,             
+                     "初潮年龄","绝经年龄","口服避孕药","激素治疗",          
+                     "人工流产次数",'绝育手术','子宫摘除术','卵巢摘除术'),data=CA125)
+#lasso-logistic回归
+CA125_2<-na.omit(CA125[,c('CA125_pos',variables)])
+library(glmnet)
+x<-model.matrix(CA125_pos~.,CA125_2,contrasts.arg = lapply(CA125_2[ ,sapply(CA125_2, is.factor)], contrasts, contrasts = FALSE ))
+x<-x[,-1]
+y<-CA125_2[,c('CA125_pos')]
+lasso <- glmnet(x,y, family = "binomial", alpha = 1)
+plot(lasso, xvar = "lambda", label = TRUE)
+cv_output<-cv.glmnet(x,y,alpha=1,family='binomial')#lambda
+plot(cv_output)
+coef(cv_output,s='lambda.min')#系数
+get_coe(cv_output,cv_output$lambda.min)
+#group-lasso logistic
+group<-c("癌症家族史","癌症家族史","乳腺癌家族史","乳腺癌家族史","年龄","年龄",                 
+        "年龄","就业状况","就业状况","就业状况","就业状况","BMI",                   
+        "BMI","BMI","BMI","偏咸","偏咸","腌制",                     
+        "腌制","饮酒","饮酒","喝茶","喝茶","酸奶", "酸奶","吸烟","吸烟",          
+        "吸烟","被动吸烟","被动吸烟","被动吸烟","婚姻","婚姻",                  
+        "婚姻","教育","教育","教育","血型","血型",                     
+         "血型","血型","血型", "蔬菜","蔬菜","水果","水果","谷类","谷类",                     
+         "鸡蛋","鸡蛋","杂粮", "杂粮","豆类","豆类","坚果","坚果","菌类",                     
+          "菌类","油炸","油炸","烧烤","烧烤","熏制","熏制", "静态时间","静态时间",                 
+         "静态时间","静态时间","手机使用时间","手机使用时间","手机使用时间","手机使用时间",  
+          "乳腺小叶不典型增生","乳腺小叶不典型增生","乳腺导管不典型增生",      
+         "乳腺导管不典型增生","乳腺重度不典型增生","乳腺重度不典型增生",      
+          "乳腺纤维瘤","乳腺纤维瘤","糖尿病","糖尿病","高血压","高血压",                  
+         "高血脂","高血脂","冠心病","冠心病","中风","中风",                    
+         "初潮年龄","初潮年龄","绝经年龄","绝经年龄","绝经年龄","口服避孕药",              
+          "口服避孕药","激素治疗","激素治疗", "人工流产次数","人工流产次数","绝育手术","绝育手术",
+          "子宫摘除术","子宫摘除术","卵巢摘除术","卵巢摘除术")
+fit <- grpreg(x, y, group, penalty="grLasso", family="binomial")
+plot(fit)
+cvfit<- cv.grpreg(x, y, group, penalty="grLasso",family='binomial')
+plot(cvfit)
+as.matrix(coef(cvfit,lambda=cvfit$lambda.min))
+#对于乳腺癌的诊断效果(诊断效果很差的)
+roc(CA125$CA_breast, CA125$CA125,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+plot.roc(CA125$CA_breast,CA125$CA125,direction='<',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
 
 
 
