@@ -8,11 +8,17 @@ risk_function<-function(data){
   attach(data)
   #------------------------------------------------------共同因素-----------------------------------------------------
   #家族史函数
-  family_sum<-function(x){
-    x1<-sort(x,decreasing = TRUE)
-    x2<-ifelse(length(x1[x1>2])<=2,x1[1]+x1[2],ifelse(x1[1]==5,10,9))
-    return(x2) 
-  }  
+  #(1)	如果一级亲属（父亲、母亲、哥哥、弟弟、姐姐、妹妹、儿子、女儿）曾患过癌症，每一位按3分算；
+  #(2)	如果二级亲属（祖父(grandpa1)，祖母(grandmo1)，外祖父grandpa1，外祖母母(grandmo2)，叔/伯/舅Uncle，姑/姨Aunt ）曾患过癌症，每一位按2分算；
+  #(3)	如果三级亲属（堂/表兄弟cousin1，堂/表姐妹cousin2）曾患过癌症，每一位按1分算；
+  #(4)	累计最高10分；
+  
+  #family_sum<-function(x){
+  #  x1<-sort(x,decreasing = TRUE)
+  #  x2<-ifelse(x1[1]+x1[2]+x1[3]+x1[4]<=10,)
+  #  return(x2) 
+  #}
+  
   #(1)年龄
   #≤ 49 岁（0分）
   #50-59 岁（1分）
@@ -107,16 +113,25 @@ risk_function<-function(data){
   common_risk<-age_risk+smoking_risk+passivesmk_risk+bmi_risk+food_risk+body_risk
 #----------------------------------------------------------肺癌----------------------------------------------------------
   #肺癌
-  lung_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==34,ifelse(!is.na(fapersoid) & nchar(fapersoid)>4,5,3),0),0)
-  lung_moth<-ifelse(!is.na(catpmoth),ifelse(catpmoth==34,ifelse(!is.na(mopersoid) & nchar(mopersoid)>4,5,3),0),0)
-  lung_brot1<-ifelse(!is.na(catpbrot1),ifelse(catpbrot1==34,ifelse(!is.na(br1persoid) & nchar(br1persoid)>4,5,3),0),0)
-  lung_brot2<-ifelse(!is.na(catpbrot2),ifelse(catpbrot2==34,ifelse(!is.na(br2persoid) & nchar(br2persoid)>4,5,3),0),0)
-  lung_sist1<-ifelse(!is.na(catpsist1),ifelse(catpsist1==34,ifelse(!is.na(si1persoid) & nchar(si1persoid)>4,5,3),0),0)
-  lung_sist2<-ifelse(!is.na(catpsist2),ifelse(catpsist2==34,ifelse(!is.na(si2persoid) & nchar(si2persoid)>4,5,3),0),0)
-  lung_chil1<-ifelse(!is.na(catpchil1),ifelse(catpchil1==34,ifelse(!is.na(ch1persoid) & nchar(ch1persoid)>4,5,3),0),0)
-  lung_chil2<-ifelse(!is.na(catpchil2),ifelse(catpchil2==34,ifelse(!is.na(ch2persoid) & nchar(ch2persoid)>4,5,3),0),0)
+  lung_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==34,3,0),0)
+  lung_moth<-ifelse(!is.na(catpmoth),ifelse(catpmoth==34,3,0),0)
+  lung_brot1<-ifelse(!is.na(catpbrot1),ifelse(catpbrot1==34,3,0),0)
+  lung_brot2<-ifelse(!is.na(catpbrot2),ifelse(catpbrot2==34,3,0),0)
+  lung_sist1<-ifelse(!is.na(catpsist1),ifelse(catpsist1==34,3,0),0)
+  lung_sist2<-ifelse(!is.na(catpsist2),ifelse(catpsist2==34,3,0),0)
+  lung_chil1<-ifelse(!is.na(catpchil1),ifelse(catpchil1==34,3,0),0)
+  lung_chil2<-ifelse(!is.na(catpchil2),ifelse(catpchil2==34,3,0),0)
+  #lung_grandpa1<-ifelse(!is.na(catpgrandpa1),ifelse(catpgrandpa1==34,3,0),0)#祖父
+  #lung_grandmo1<-ifelse(!is.na(catpgrandmo1),ifelse(catpgrandmo1==34,3,0),0)#祖母
+  #lung_grandpa2<-ifelse(!is.na(catpgrandpa2),ifelse(catpgrandpa2==34,3,0),0)#外祖父
+  #lung_grandmo2<-ifelse(!is.na(catpgrandmo1),ifelse(catpgrandmo2==34,3,0),0)#外祖母
+  #lung_uncle<-ifelse(!is.na(catpuncle),ifelse(catpuncle==34,3,0),0)#叔/伯/舅
+  #lung_aunt<-ifelse(!is.na(catpaunt),ifelse(catpaunt==34,3,0),0)#姑/姨
+  #lung_couosin1<-ifelse(!is.na(couosin1),ifelse(couosin1==34,3,0),0)#堂/表兄弟
+  #lung_couosin2<-ifelse(!is.na(couosin2),ifelse(couosin2==34,3,0),0)#堂/表姐妹
   lung_family1<-data.frame(lung_fath,lung_moth,lung_brot1,lung_brot2,lung_sist1,lung_sist2,lung_chil1,lung_chil2)
-  lung_family<-apply(lung_family1,1,family_sum)
+  #lung_family<-apply(lung_family1,1,family_sum)
+  lung_family<-sapply(rowSums(lung_family1),function(x)x2<-ifelse(x<=9,x,9))
   #3.曾患或现患：弥漫性肺间质纤维化，肺结核，慢性支气管炎，肺气肿，哮喘支气管扩张，矽肺或尘肺
   disea_1<-ifelse(is.na(disea1),0,ifelse(disea1==2,1,0))
   disea_2<-ifelse(is.na(disea2),0,ifelse(disea2==2,1,0))
@@ -137,17 +152,27 @@ risk_function<-function(data){
   lung_score<-common_risk+lung_family+lung_disea_occuexpo
   #-----------------------------------------------------2.乳腺癌----------------------------------------------------------------
   #1.一级亲属乳腺癌家族史任意一人曾患过乳腺癌，能提供身份证时5分，不能时3分
-  breast_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==47,ifelse(!is.na(fapersoid) & nchar(fapersoid)>4,5,3),0),0)
-  breast_moth<-ifelse(!is.na(catpmoth),ifelse(catpmoth==47,ifelse(!is.na(mopersoid) & nchar(mopersoid)>4,5,3),0),0)
-  breast_brot1<-ifelse(!is.na(catpbrot1),ifelse(catpbrot1==47,ifelse(!is.na(br1persoid) & nchar(br1persoid)>4,5,3),0),0)
-  breast_brot2<-ifelse(!is.na(catpbrot2),ifelse(catpbrot2==47,ifelse(!is.na(br2persoid) & nchar(br2persoid)>4,5,3),0),0)
-  breast_sist1<-ifelse(!is.na(catpsist1),ifelse(catpsist1==47,ifelse(!is.na(si1persoid) & nchar(si1persoid)>4,5,3),0),0)
-  breast_sist2<-ifelse(!is.na(catpsist2),ifelse(catpsist2==47,ifelse(!is.na(si2persoid) & nchar(si2persoid)>4,5,3),0),0)
-  breast_chil1<-ifelse(!is.na(catpchil1),ifelse(catpchil1==47,ifelse(!is.na(ch1persoid) & nchar(ch1persoid)>4,5,3),0),0)
-  breast_chil2<-ifelse(!is.na(catpchil2),ifelse(catpchil2==47,ifelse(!is.na(ch2persoid) & nchar(ch2persoid)>4,5,3),0),0)
+  breast_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==47,3,0),0)
+  breast_moth<-ifelse(!is.na(catpmoth),ifelse(catpmoth==47,3,0),0)
+  breast_brot1<-ifelse(!is.na(catpbrot1),ifelse(catpbrot1==47,3,0),0)
+  breast_brot2<-ifelse(!is.na(catpbrot2),ifelse(catpbrot2==47,3,0),0)
+  breast_sist1<-ifelse(!is.na(catpsist1),ifelse(catpsist1==47,3,0),0)
+  breast_sist2<-ifelse(!is.na(catpsist2),ifelse(catpsist2==47,3,0),0)
+  breast_chil1<-ifelse(!is.na(catpchil1),ifelse(catpchil1==47,3,0),0)
+  breast_chil2<-ifelse(!is.na(catpchil2),ifelse(catpchil2==47,3,0),0)
+  #breast__grandpa1<-ifelse(!is.na(catpgrandpa1),ifelse(catpgrandpa1==47,3,0),0)#祖父
+  #breast__grandmo1<-ifelse(!is.na(catpgrandmo1),ifelse(catpgrandmo1==47,3,0),0)#祖母
+  #breast__grandpa2<-ifelse(!is.na(catpgrandpa2),ifelse(catpgrandpa2==47,3,0),0)#外祖父
+  #breast__grandmo2<-ifelse(!is.na(catpgrandmo1),ifelse(catpgrandmo2==47,3,0),0)#外祖母
+  #breast__uncle<-ifelse(!is.na(catpuncle),ifelse(catpuncle==47,3,0),0)#叔/伯/舅
+  #breast__aunt<-ifelse(!is.na(catpaunt),ifelse(catpaunt==47,3,0),0)#姑/姨
+  #breast__couosin1<-ifelse(!is.na(couosin1),ifelse(couosin1==47,3,0),0)#堂/表兄弟
+  #breast__couosin2<-ifelse(!is.na(couosin2),ifelse(couosin2==47,3,0),0)#堂/表姐妹
   breast_family1<-data.frame(breast_fath,breast_moth,breast_brot1,breast_brot2,
                      breast_sist1,breast_sist2,breast_chil1,breast_chil2)
-  breast_family<-apply(breast_family1,1,family_sum)
+  #breast_family<-apply(breast_family1,1,family_sum)
+  #breast_family<ifelse(breast_family1<=9,breast_family1,9)
+  breast_family<-sapply(rowSums(breast_family1),function(x)x2<-ifelse(x<=9,x,9))
   #2.曾患或现患：乳腺小叶不典型增生，乳腺导管不典型增生，或乳腺小叶原位癌（每个1分）
   disea_25<-ifelse(is.na(disea25),0,ifelse(sex==2 & disea25==2,1,0))
   disea_26<-ifelse(is.na(disea26),0,ifelse(sex==2 & disea26==2,1,0))
@@ -175,17 +200,27 @@ risk_function<-function(data){
   breast_score<-breast_family+common_risk+breast_risk_score
 #---------------------------------------------------------- ##3.肝癌----------------------------------------------------------------
   #1.家族史(能提供身份证5分，不能提供身份证3分)
-  liver_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==24,ifelse(!is.na(fapersoid) & nchar(fapersoid)>4,5,3),0),0)
-  liver_moth<-ifelse(!is.na(catpmoth),ifelse(catpmoth==24,ifelse(!is.na(mopersoid) & nchar(mopersoid)>4,5,3),0),0)
-  liver_brot1<-ifelse(!is.na(catpbrot1),ifelse(catpbrot1==24,ifelse(!is.na(br1persoid) & nchar(br1persoid)>4,5,3),0),0)
-  liver_brot2<-ifelse(!is.na(catpbrot2),ifelse(catpbrot2==24,ifelse(!is.na(br2persoid) & nchar(br2persoid)>4,5,3),0),0)
-  liver_sist1<-ifelse(!is.na(catpsist1),ifelse(catpsist1==24,ifelse(!is.na(si1persoid) & nchar(si1persoid)>4,5,3),0),0)
-  liver_sist2<-ifelse(!is.na(catpsist2),ifelse(catpsist2==24,ifelse(!is.na(si2persoid) & nchar(si2persoid)>4,5,3),0),0)
-  liver_chil1<-ifelse(!is.na(catpchil1),ifelse(catpchil1==24,ifelse(!is.na(ch1persoid) & nchar(ch1persoid)>4,5,3),0),0)
-  liver_chil2<-ifelse(!is.na(catpchil2),ifelse(catpchil2==24,ifelse(!is.na(ch2persoid) & nchar(ch2persoid)>4,5,3),0),0)
+  liver_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==24,3,0),0)
+  liver_moth<-ifelse(!is.na(catpmoth),ifelse(catpmoth==24,3,0),0)
+  liver_brot1<-ifelse(!is.na(catpbrot1),ifelse(catpbrot1==24,3,0),0)
+  liver_brot2<-ifelse(!is.na(catpbrot2),ifelse(catpbrot2==24,3,0),0)
+  liver_sist1<-ifelse(!is.na(catpsist1),ifelse(catpsist1==24,3,0),0)
+  liver_sist2<-ifelse(!is.na(catpsist2),ifelse(catpsist2==24,3,0),0)
+  liver_chil1<-ifelse(!is.na(catpchil1),ifelse(catpchil1==24,3,0),0)
+  liver_chil2<-ifelse(!is.na(catpchil2),ifelse(catpchil2==24,3,0),0)
+  #liver_grandpa1<-ifelse(!is.na(catpgrandpa1),ifelse(catpgrandpa1==24,3,0),0)#祖父
+  #liver_grandmo1<-ifelse(!is.na(catpgrandmo1),ifelse(catpgrandmo1==24,3,0),0)#祖母
+  #liver_grandpa2<-ifelse(!is.na(catpgrandpa2),ifelse(catpgrandpa2==24,3,0),0)#外祖父
+  #liver_grandmo2<-ifelse(!is.na(catpgrandmo1),ifelse(catpgrandmo2==24,3,0),0)#外祖母
+  #liver_uncle<-ifelse(!is.na(catpuncle),ifelse(catpuncle==24,3,0),0)#叔/伯/舅
+  #liver_aunt<-ifelse(!is.na(catpaunt),ifelse(catpaunt==24,3,0),0)#姑/姨
+  #liver_couosin1<-ifelse(!is.na(couosin1),ifelse(couosin1==24,3,0),0)#堂/表兄弟
+  #liver_couosin2<-ifelse(!is.na(couosin2),ifelse(couosin2==24,3,0),0)#堂/表姐妹
   liver_family1<-data.frame(liver_fath,liver_moth,liver_brot1,liver_brot2,
                     liver_sist1,liver_sist2,liver_chil1,liver_chil2)
-  liver_family<-apply(liver_family1,1,family_sum)
+  #liver_family<-apply(liver_family1,1,family_sum)
+  #liver_family<-ifelse(liver_family1<=9,liver_family1,9)
+  liver_family<-sapply(rowSums(liver_family1),function(x)x2<-ifelse(x<=9,x,9))
   #2.疾病史,曾患肝硬化、慢性乙型肝炎、慢性丙型肝炎（每个1分）
   disea_10<-ifelse(is.na(disea10),0,ifelse(disea10==2,1,0))
   disea_11<-ifelse(is.na(disea11),0,ifelse(disea11==2,1,0))
@@ -203,17 +238,27 @@ risk_function<-function(data){
   liver_score<-liver_family+liver_disea_risk+common_risk
   ##4.胃癌
   #1.家族史（有身份证5分，无身份证3分，上限15分）
-  gastric_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==16,ifelse(!is.na(fapersoid) & nchar(fapersoid)>4,5,3),0),0)
-  gastric_moth<-ifelse(!is.na(catpmoth),ifelse(catpmoth==16,ifelse(!is.na(mopersoid) & nchar(mopersoid)>4,5,3),0),0)
-  gastric_brot1<-ifelse(!is.na(catpbrot1),ifelse(catpbrot1==16,ifelse(!is.na(br1persoid) & nchar(br1persoid)>4,5,3),0),0)
-  gastric_brot2<-ifelse(!is.na(catpbrot2),ifelse(catpbrot2==16,ifelse(!is.na(br2persoid) & nchar(br2persoid)>4,5,3),0),0)
-  gastric_sist1<-ifelse(!is.na(catpsist1),ifelse(catpsist1==16,ifelse(!is.na(si1persoid) & nchar(si1persoid)>4,5,3),0),0)
-  gastric_sist2<-ifelse(!is.na(catpsist2),ifelse(catpsist2==16,ifelse(!is.na(si2persoid) & nchar(si2persoid)>4,5,3),0),0)
-  gastric_chil1<-ifelse(!is.na(catpchil1),ifelse(catpchil1==16,ifelse(!is.na(ch1persoid) & nchar(ch1persoid)>4,5,3),0),0)
-  gastric_chil2<-ifelse(!is.na(catpchil2),ifelse(catpchil2==16,ifelse(!is.na(ch2persoid) & nchar(ch2persoid)>4,5,3),0),0)
+  gastric_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==16,3,0),0)
+  gastric_moth<-ifelse(!is.na(catpmoth),ifelse(catpmoth==16,3,0),0)
+  gastric_brot1<-ifelse(!is.na(catpbrot1),ifelse(catpbrot1==16,3,0),0)
+  gastric_brot2<-ifelse(!is.na(catpbrot2),ifelse(catpbrot2==16,3,0),0)
+  gastric_sist1<-ifelse(!is.na(catpsist1),ifelse(catpsist1==16,3,0),0)
+  gastric_sist2<-ifelse(!is.na(catpsist2),ifelse(catpsist2==16,3,0),0)
+  gastric_chil1<-ifelse(!is.na(catpchil1),ifelse(catpchil1==16,3,0),0)
+  gastric_chil2<-ifelse(!is.na(catpchil2),ifelse(catpchil2==16,3,0),0)
+  #gastric_grandpa1<-ifelse(!is.na(catpgrandpa1),ifelse(catpgrandpa1==16,3,0),0)#祖父
+  #gastric_grandmo1<-ifelse(!is.na(catpgrandmo1),ifelse(catpgrandmo1==16,3,0),0)#祖母
+  #gastric_grandpa2<-ifelse(!is.na(catpgrandpa2),ifelse(catpgrandpa2==16,3,0),0)#外祖父
+  #gastric_grandmo2<-ifelse(!is.na(catpgrandmo1),ifelse(catpgrandmo2==16,3,0),0)#外祖母
+  #gastric_uncle<-ifelse(!is.na(catpuncle),ifelse(catpuncle==16,3,0),0)#叔/伯/舅
+  #gastric_aunt<-ifelse(!is.na(catpaunt),ifelse(catpaunt==16,3,0),0)#姑/姨
+  #gastric_couosin1<-ifelse(!is.na(couosin1),ifelse(couosin1==16,3,0),0)#堂/表兄弟
+  #gastric_couosin2<-ifelse(!is.na(couosin2),ifelse(couosin2==16,3,0),0)#堂/表姐妹
   gastric_family1<-data.frame(gastric_fath,gastric_moth,gastric_brot1,gastric_brot2,
                       gastric_sist1,gastric_sist2,gastric_chil1,gastric_chil2)
-  gastric_family<-apply(gastric_family1,1,family_sum)
+  #gastric_family<-apply(gastric_family1,1,family_sum)
+  #gastric_family<-ifelse(gastric_family1<=9,gastric_family1,9)
+  gastric_family<-sapply(rowSums(gastric_family1),function(x)x2<-ifelse(x<=9,x,9))
   #2.疾病史，曾患或现患：胃溃疡、幽门螺旋杆菌、胃粘膜异性或不典型增生、残胃、肠上皮化生
   #萎缩性胃炎、胃息肉、食管或胃上皮内流变、十二指肠溃疡、Barrett食管、EB病毒感染史（每个1分）
   disea_14<-ifelse(is.na(disea14),0,ifelse(disea14==2,1,0))
