@@ -1,8 +1,9 @@
 library(tidyverse)
 library(openxlsx)
 library(ggpubr)
+library(rio)
 rm(list=ls())
-screening<-read.xlsx('~/data/screening2019.xlsx',detectDates = TRUE,sheet=2)
+screening<-read.xlsx('~/data/screening2019.xlsx',detectDates = TRUE)
 source('~/Rcode/screening/riskscore2020/riskscore2020.R')
 screening2<-risk_function(screening)
 screening_PAD<-screening2[which(screening2$source=='PAD'),]
@@ -21,7 +22,7 @@ pivot_longer(cols=ends_with('family'),names_to='family',values_to = 'score' )%>%
   group_by(family,score)%>%summarise(n=n())
 facet(ggbarplot(data=family,x='score',y='n',label='n',lab.pos='out'),facet.by = 'family',scales='free_x')
 #score
-cancer_score<-score[,c("lung_score",'breast_score','liver_score','gastric_score')]%>%
+cancer_score<-screening2[,c("lung_score",'breast_score','liver_score','gastric_score')]%>%
   pivot_longer(cols=ends_with('score'),names_to='cancer',values_to = 'score' )%>%
    group_by(cancer,score)%>%summarise(n=n())
 plot1<-facet(ggbarplot(data=subset(cancer_score,!is.na(score)),x='score',xlab='',y='n'),
@@ -33,6 +34,7 @@ plot1<-facet(ggbarplot(data=subset(cancer_score,!is.na(score)),x='score',xlab=''
           hjust = 0.5
         ),plot.title=element_text(hjust=0.5)
       )+labs(title='Epidata')
+plot1
 table<-data.frame(t(apply(score[,c("lung_score",'breast_score','liver_score','gastric_score')],2,percent_value)))
 table2<-cbind(c('lung_score','breast_score',
                 'liver_score','gastric_score'),table)
