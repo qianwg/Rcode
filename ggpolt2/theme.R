@@ -10,3 +10,12 @@ axis.text.x=element_blank()
 axis.title.x=element_blank()
 #3.删除lengend
 legend.position="none"
+#
+strip.background = element_rect(
+   color = "white", fill = "white")
+#分面设置
+panel.spacing.y=unit(0.05, "lines")
+#增加X,Y轴
+axis.line = element_line(color='black')
+#
+legend.key=element_rect(color='white')
