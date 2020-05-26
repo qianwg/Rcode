@@ -29,6 +29,8 @@ my.render.cat <- function(x) {
 }
 #baseline risk factors
 baseline_risk<-baseline2%>%transmute(year=factor(year2,levels=c(1,2,3,4),labels=c('2017','2018','2019','P value')),
+                                     地区=factor(ifelse(region=='下营' | region=='下营镇' | region=='东二营镇' | region=='别山' | region=='别山镇' |
+                                                        region=='官庄' | region=='官庄镇' | region=='桑梓镇' | region=='马伸桥' | region=='马伸桥镇',2,1),levels=c(1,2),labels = c('市区','郊区')),
                      age_risk=ifelse(age<=49,'0',ifelse(age>=60,'2','1')),
                      age_risk=ifelse(is.na(age_risk),0,age_risk),
                      smk_risk=case_when(
@@ -95,6 +97,8 @@ table1(~年龄+吸烟+被动吸烟+BMI+饮酒+喝茶+酸奶+蔬菜+水果+谷类
 #--------------------------------------------risk factors
 #一级亲属肺癌家族史
 lung<-baseline2%>%transmute(year=factor(year2,levels=c(1,2,3,4),labels=c('2017','2018','2019','P value')),
+                            地区=ifelse(region=='下营' | region=='下营镇' | region=='东二营镇' | region=='别山' | region=='别山镇' |
+                                               region=='官庄' | region=='官庄镇' | region=='桑梓镇' | region=='马伸桥' | region=='马伸桥镇',2,1),
   lung_risk1=ifelse(catpfath==34 | catpmoth==34 | catpbrot==34 | catpbrot1==34 |catpbrot2==34 |
                       catpsist==34 | catpsist1==34 | catpsist2==34 | catpchil==34 | catpchil1==34 | catpchil2==34,1,0),
   lung_risk1=ifelse(is.na(lung_risk1),0,lung_risk1),
@@ -112,7 +116,7 @@ lung<-baseline2%>%transmute(year=factor(year2,levels=c(1,2,3,4),labels=c('2017',
   lung_risk12=ifelse(is.na(lung_risk12),0,lung_risk12),
   risk=lung_risk1+lung_risk2+lung_risk3+lung_risk4+lung_risk5+lung_risk6+lung_risk7+lung_risk8+
     lung_risk9+lung_risk10+lung_risk11+lung_risk12
-  )%>%transmute(year=year,肺癌家族史=factor(lung_risk1),年龄=factor(lung_risk2),弥漫性肺间质纤维化=factor(lung_risk3),
+  )%>%transmute(year=year,地区=factor(地区,levels = c(1,2,3),labels=c('市内六区','蓟州区','P-value')),肺癌家族史=factor(lung_risk1),年龄=factor(lung_risk2),弥漫性肺间质纤维化=factor(lung_risk3),
                 肺结核=factor(lung_risk4),慢性支气管炎=factor(lung_risk5),肺气肿=factor(lung_risk6),
                 哮喘支气管扩张=factor(lung_risk7),矽肺或尘肺=factor(lung_risk8),被动吸烟=factor(lung_risk9),
                 精神问题=factor(lung_risk10),曾经或现在吸烟=factor(lung_risk11),职业暴露=factor(lung_risk12),
@@ -129,6 +133,7 @@ rndr_lung<- function(x, name, ...){
       #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
     } else {
       p <- chisq.test(table(y, droplevels(lung$year)))$p.value
+      #p <- chisq.test(table(y, droplevels(lung$地区)))$p.value
      #p <- chisq.test(table(y, droplevels(lung$year)))$statistic
       #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
     }
@@ -142,9 +147,15 @@ rndr_lung<- function(x, name, ...){
 table1(~肺癌家族史+年龄+肺结核+慢性支气管炎+肺气肿+哮喘支气管扩张+精神问题+弥漫性肺间质纤维化+
          矽肺或尘肺+职业暴露+被动吸烟+曾经或现在吸烟+至少2个因素合计+至少3个因素合计+至少4个因素合计 | year,render.categorical=my.render.cat,
        data=lung,overall=F,render = rndr_lung,render.strat=rndr.strat,droplevels = F) 
+#2017-2019年市内六区与蓟州区筛查居民肺癌相关危险因素分布比较
+table1(~肺癌家族史+年龄+肺结核+慢性支气管炎+肺气肿+哮喘支气管扩张+精神问题+弥漫性肺间质纤维化+
+         矽肺或尘肺+职业暴露+被动吸烟+曾经或现在吸烟+至少2个因素合计+至少3个因素合计+至少4个因素合计 | 地区,render.categorical=my.render.cat,
+       data=lung,overall=F,render = rndr_lung,render.strat=rndr.strat,droplevels = F) 
 ##breast cancer and its risk factors
 #------------------------------------factors---
 breast<-baseline2%>%filter(sex==2)%>%transmute(year=factor(year2,levels=c(1,2,3,4),labels=c('2017','2018','2019','P value')),
+                                               地区=ifelse(region=='下营' | region=='下营镇' | region=='东二营镇' | region=='别山' | region=='别山镇' |
+                                                           region=='官庄' | region=='官庄镇' | region=='桑梓镇' | region=='马伸桥' | region=='马伸桥镇',2,1),
                               breast_risk1=ifelse(catpfath==47 | catpmoth==47 | catpbrot==47 | catpbrot1==47 |catpbrot2==47 |
                                                   catpsist==47 | catpsist1==47 | catpsist2==47 | catpchil==47 | catpchil1==47 | catpchil2==47,1,0),
                              breast_risk1=ifelse(is.na(breast_risk1),0,breast_risk1),
@@ -170,7 +181,7 @@ breast<-baseline2%>%filter(sex==2)%>%transmute(year=factor(year2,levels=c(1,2,3,
                                breast_risk7+breast_risk8+breast_risk9+breast_risk10+breast_risk11+breast_risk12+
                                breast_risk13+breast_risk14
                               )%>%
-  transmute(year=year,乳腺癌家族史=factor(ifelse(is.na(breast_risk1),1,breast_risk1)),乳腺小叶不典型增生=factor(breast_risk2),
+  transmute(year=year,地区=factor(地区,levels = c(1,2,3),labels=c('市内六区','蓟州区','P-value')),乳腺癌家族史=factor(ifelse(is.na(breast_risk1),1,breast_risk1)),乳腺小叶不典型增生=factor(breast_risk2),
   乳腺导管不典型增生=factor(breast_risk3),乳腺小叶原位癌=factor(breast_risk4),年龄=factor(breast_risk5),
   初潮年龄=factor(breast_risk6),绝经年龄=factor(breast_risk7),未生育或首次生育年龄=factor(breast_risk8),
   未哺乳或哺乳时间=factor(breast_risk9),口服避孕药=factor(breast_risk10),激素替代治疗=factor(breast_risk11),
@@ -185,12 +196,10 @@ rndr_breast<- function(x, name, ...){
     y <- breast[[name]]
     s <- rep("", length(render.default(x=y, name=name, ...)))
     if (is.numeric(y)) {
-      p <- kruskal.test(y ~ breast$year)$p.value
-      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
+      p <- kruskal.test(y ~ breast$地区)$p.value
     } else {
       p <- chisq.test(table(y, droplevels(breast$year)))$p.value
-      #p <- chisq.test(table(y, droplevels(breast$year)))$statistic
-      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+      #p <- chisq.test(table(y, droplevels(breast$地区)))$p.value
     }
     s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
     s
@@ -204,11 +213,22 @@ table1(~乳腺癌家族史+年龄+初潮年龄+绝经年龄+未生育或首次�
          激素替代治疗+BMI+人工流产次数+至少2个因素合计+至少3个因素合计+至少4个因素合计 | year,data=breast,overall=F,render.categorical=my.render.cat,
        render = rndr_breast,render.strat=rndr.strat,droplevels = F) 
 
-  ##liver cancer and its risk factors
+
+#2017-2019年筛查人群乳腺癌相关危险因素分布比较
+table1(~乳腺癌家族史+年龄+初潮年龄+绝经年龄+未生育或首次生育年龄+未哺乳或哺乳时间+口服避孕药+精神问题+乳腺小叶不典型增生+
+         乳腺导管不典型增生+乳腺小叶原位癌+
+         激素替代治疗+BMI+人工流产次数+至少2个因素合计+至少3个因素合计+至少4个因素合计 | 地区,data=breast,overall=F,render.categorical=my.render.cat,
+       render = rndr_breast,render.strat=rndr.strat,droplevels = F) 
+
+
+
+##liver cancer and its risk factors
 #risk factors-----------------------------------------------------------------------------------------
 liver<-baseline2%>%transmute(year=factor(year2,levels=c(1,2,3,4),labels=c('2017','2018','2019','P value')),
                              liver_risk1=ifelse(catpfath==24 | catpmoth==24 | catpbrot==24 | catpbrot1==24 |catpbrot2==24 |
                                                 catpsist==24 | catpsist1==24 | catpsist2==24 | catpchil==24 | catpchil1==24 | catpchil2==24,1,0),
+                             地区=ifelse(region=='下营' | region=='下营镇' | region=='东二营镇' | region=='别山' | region=='别山镇' |
+                                         region=='官庄' | region=='官庄镇' | region=='桑梓镇' | region=='马伸桥' | region=='马伸桥镇',2,1),
                              liver_risk1=ifelse(is.na(liver_risk1),0,liver_risk1),
                              liver_risk2=ifelse(disea10==2 & !is.na(disea10),1,0),#肝硬化
                              liver_risk3=ifelse(disea11==2 & !is.na(disea11),1,0),#慢性乙型肝炎
@@ -229,7 +249,7 @@ liver<-baseline2%>%transmute(year=factor(year2,levels=c(1,2,3,4),labels=c('2017'
                              liver_risk15=ifelse(is.na(liver_risk15),0,liver_risk15),
                              risk=liver_risk1+liver_risk2+liver_risk3+liver_risk4+liver_risk5+liver_risk6+liver_risk11+
                                liver_risk12+liver_risk13+liver_risk14+liver_risk15)%>%
-transmute(year=year,肝癌家族史=factor(ifelse(is.na(liver_risk1),1,liver_risk1)),肝硬化=factor(liver_risk2),
+transmute(year=year,地区=factor(地区,levels = c(1,2,3),labels=c('市内六区','蓟州区','P-value')),肝癌家族史=factor(ifelse(is.na(liver_risk1),1,liver_risk1)),肝硬化=factor(liver_risk2),
  慢性乙型肝炎=factor(liver_risk3),慢性丙型肝炎=factor(liver_risk4),饮酒=factor(liver_risk5),
  氯乙烯暴露=factor(liver_risk6),脂肪肝=factor(liver_risk7),血吸虫感染史=factor(liver_risk8),
  胆囊息肉=factor(liver_risk9),胆结石=factor(liver_risk10),BMI=factor(liver_risk11),精神问题=factor(liver_risk12),偏好食品=factor(liver_risk13),
@@ -244,11 +264,9 @@ rndr_liver<- function(x, name, ...){
     s <- rep("", length(render.default(x=y, name=name, ...)))
     if (is.numeric(y)) {
       p <- kruskal.test(y ~ liver$year)$p.value
-      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
     } else {
-      p <- chisq.test(table(y, droplevels(liver$year)))$p.value
-      #p <- chisq.test(table(y, droplevels(liver$year)))$statistic
-      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+      #p <- chisq.test(table(y, droplevels(liver$year)))$p.value
+      p <- chisq.test(table(y, droplevels(liver$地区)))$p.value
     }
     s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
     s
@@ -259,13 +277,19 @@ rndr_liver<- function(x, name, ...){
 
 table1(~肝癌家族史+肝硬化+慢性乙型肝炎+慢性丙型肝炎+饮酒+氯乙烯暴露+年龄+肝部其他疾病+精神问题+
        BMI+偏好食品+至少2个因素合计+至少3个因素合计+至少4个因素合计 | year,data=liver,overall=F,render.categorical=my.render.cat,
+       render = rndr_liver,render.strat=rndr.strat,droplevels = F)
+#. 2017-2019年筛查人群肝癌相关危险因素分布比较
+table1(~肝癌家族史+肝硬化+慢性乙型肝炎+慢性丙型肝炎+饮酒+氯乙烯暴露+年龄+肝部其他疾病+精神问题+
+         BMI+偏好食品+至少2个因素合计+至少3个因素合计+至少4个因素合计 | 地区,data=liver,overall=F,render.categorical=my.render.cat,
        render = rndr_liver,render.strat=rndr.strat,droplevels = F) 
       #gastric cancer and its risk factors 
 #-------------------------------------------------risk factors
 gastric<-baseline2%>%transmute(year=factor(year2,levels=c(1,2,3,4),labels=c('2017','2018','2019','P value')),
                                gastric_risk1=ifelse(catpfath==16 | catpmoth==16 | catpbrot==16 | catpbrot1==16 |catpbrot2==16 |
                                                   catpsist==16 | catpsist1==16 | catpsist2==16 | catpchil==16 | catpchil1==16 | catpchil2==16,1,0),
-                               gastric_risk1=ifelse(is.na(gastric_risk1),0, gastric_risk1),
+                               地区=ifelse(region=='下营' | region=='下营镇' | region=='东二营镇' | region=='别山' | region=='别山镇' |
+                                           region=='官庄' | region=='官庄镇' | region=='桑梓镇' | region=='马伸桥' | region=='马伸桥镇',2,1),
+                                gastric_risk1=ifelse(is.na(gastric_risk1),0, gastric_risk1),
                                gastric_risk2=ifelse(disea18==2 & !is.na(disea18),1,0),#胃溃疡
                                gastric_risk3=ifelse(disea20==2 & !is.na(disea20),1,0),#幽门螺旋杆菌感染史
                                gastric_risk4=ifelse(disea22==2 & !is.na(disea22),1,0),#胃粘膜异型或不典型增生
@@ -287,7 +311,7 @@ gastric<-baseline2%>%transmute(year=factor(year2,levels=c(1,2,3,4),labels=c('201
                                  gastric_risk7+gastric_risk8+gastric_risk9+gastric_risk10+gastric_risk11+gastric_risk12+gastric_risk13+
                                  gastric_risk14+gastric_risk15+gastric_risk16+gastric_risk17
                                )%>%
-  transmute(year=year,胃癌家族史=factor(ifelse(is.na(gastric_risk1),1,gastric_risk1)),胃溃疡=factor(gastric_risk2),
+  transmute(year=year,地区=factor(地区,levels = c(1,2,3),labels=c('市内六区','蓟州区','P-value')),胃癌家族史=factor(ifelse(is.na(gastric_risk1),1,gastric_risk1)),胃溃疡=factor(gastric_risk2),
   幽门螺旋杆菌感染史=factor(gastric_risk3),胃粘膜异型或不典型增生=factor(gastric_risk4),残胃=factor(gastric_risk5),胃肠上皮化生=factor(gastric_risk6),
   吸烟20包年=factor(gastric_risk7),萎缩性胃炎=factor(gastric_risk8),胃息肉=factor(gastric_risk9),食管或胃上皮内瘤变=factor(gastric_risk14),
   十二指肠溃疡=factor(gastric_risk15),Barrett食管=factor(gastric_risk16),精神问题=factor(gastric_risk17),
@@ -302,11 +326,9 @@ rndr_gastric<- function(x, name, ...){
     s <- rep("", length(render.default(x=y, name=name, ...)))
     if (is.numeric(y)) {
       p <- kruskal.test(y ~ gastric$year)$p.value
-      #p<-summary(lm(y~PG1_range,data=biomark_baseline,contrasts = list(PG1_range=contr.poly(4))))$coefficients[2,4]
     } else {
-      p <- chisq.test(table(y, droplevels(gastric$year)))$p.value
-      #p <- chisq.test(table(y, droplevels(gastric$year)))$statistic
-      #p<-pvalue(lbl_test(table(y,biomark_baseline$PG1_range)))
+      #p <- chisq.test(table(y, droplevels(gastric$year)))$p.value
+      p <- chisq.test(table(y, droplevels(gastric$地区)))$p.value
     }
     s[2] <- sub("<", "&lt;", format.pval(p, digits=3, eps=0.001))
     s
@@ -318,5 +340,11 @@ rndr_gastric<- function(x, name, ...){
 table1(~胃癌家族史+胃溃疡+幽门螺旋杆菌感染史+胃粘膜异型或不典型增生+残胃+胃肠上皮化生+吸烟20包年+年龄+食管或胃上皮内瘤变+
          十二指肠溃疡+Barrett食管+精神问题+萎缩性胃炎+胃息肉+EB病毒感染史+肥胖+偏好食品+
          至少2个因素合计+至少3个因素合计+至少4个因素合计 | year,data=gastric,overall=F,render.categorical=my.render.cat,
+       render = rndr_gastric,render.strat=rndr.strat,droplevels = F)
+# 2017-2018年和2019年筛查人群胃癌相关危险因素分布比较
+table1(~胃癌家族史+胃溃疡+幽门螺旋杆菌感染史+胃粘膜异型或不典型增生+残胃+胃肠上皮化生+吸烟20包年+年龄+食管或胃上皮内瘤变+
+         十二指肠溃疡+Barrett食管+精神问题+萎缩性胃炎+胃息肉+EB病毒感染史+肥胖+偏好食品+
+         至少2个因素合计+至少3个因素合计+至少4个因素合计 | 地区,data=gastric,overall=F,render.categorical=my.render.cat,
        render = rndr_gastric,render.strat=rndr.strat,droplevels = F) 
+
 
