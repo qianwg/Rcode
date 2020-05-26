@@ -2,7 +2,7 @@
 ##肝脏超声影像学特征与AFP、CA199、HBsAg的相关性分析
 liverBUS<-import('~/data/基层肝脏超声(18-19).sav')
 liverAFP<-inner_join(biomarker,liverBUS,by='ID_BLAST')
-liverAFP2<-liverAFP%>%transmute(AFP,CA199,HBsAg,AFP_pos=AFP_pos,性别,年龄,BMI,吸烟,
+liverAFP2<-liverAFP%>%transmute(ID_BLAST,Year=Year,AFP,CA199,HBsAg,AFP_pos=AFP_pos,性别,年龄,BMI,吸烟,
                                 肝脏形态=livershap,大小=liversize,包膜=livermemb,占位=ifelse(liverlump<3 & liverlump>0,liverlump,2),占位个数=livelumpno,
                                 占位1类型=livelumpN1,占位2类型=livelumpN2,占位3类型=livelumpN2,胆结石=galston,胆囊切除=choletomy,
                                 livultrdia
