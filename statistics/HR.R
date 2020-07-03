@@ -1,9 +1,9 @@
 library(survival)
-logit<-function(status,time,x,data){
+cox<-function(y,x,data){
   #单因素 
   result1<-data.frame()
   for(i in x){
-    formula_uni<-as.formula(paste(Surv(time,status),'~', i))
+    formula_uni<-as.formula(paste(y,'~', i))
     modelit_uni<-coxph(formula_uni,data)
     tableit_uni<-data.frame(summary(modelit_uni)$coef)
     tableit_uni$HR<-tableit_uni$exp.coef.
@@ -16,7 +16,7 @@ logit<-function(status,time,x,data){
   result1<-cbind(variable=row.names(result1), result1)
   row.names(result1)=NULL
   #多因素
-  formula<- as.formula(paste(Surv(time,status),'~', paste(x, collapse= "+")))
+  formula<- as.formula(paste(y,'~', paste(x, collapse= "+")))
   modelit<-coxph(formula,data)
   tableit<-data.frame(summary(modelit)$coef)
   tableit$HR<-exp(tableit$exp.coef.)
