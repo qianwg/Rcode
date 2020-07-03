@@ -1,6 +1,7 @@
 #install.packages("forestplot")
 library(forestplot)
-rs_forest <- read.csv('~/data/fig3_U.csv',header = FALSE)
+rs_forest<-import('~/data/森林图数据.xlsx')
+rs_forest <- read.csv('~/data/森林图数据.csv',header = FALSE)
 #tiff('~/Figure 1.tiff',height = 6000,width = 7000,res= 600)
 forestplot(labeltext = as.matrix(rs_forest[,1:5]),
            mean = rs_forest$V6, #设置均值
