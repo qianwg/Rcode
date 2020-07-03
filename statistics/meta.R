@@ -1,7 +1,8 @@
 rm(list=ls())
 library(meta)
 library(tidyverse)
-subgroub<-openxlsx::read.xlsx('C:/Users/sheng/Desktop/subgroup.xlsx')
+ #subgroub<-openxlsx::read.xlsx('C:/Users/sheng/Desktop/subgroup.xlsx')
+ subgroup<-openxlsx::read.xlsx('~/data/subgroup.xlsx')
 #1,infection complication
 #1.1 data
 infection<-data.frame(
@@ -23,13 +24,13 @@ combination1
 forest(combination1)
 #1.3.1 subgroup analysis(pro/synbiotics,Geography,surgery type,treatment duration,
 #study quailty,composition of pro/synbiotics,)
-infection_sub<-left_join(infection,subgroub,by=c('Authors','Years'))
+infection_sub<-left_join(infection,subgroup,by=c('Authors','Years'))
 infection_sub$followup<-ifelse(infection_sub$the.length.of.followed.up>=15,2,1)
 infection_sub$followup<-factor(infection_sub$followup,levels = c(1,2),labels = c('<15','>=15'))
 combination1_sub<-metabin(Event_I,Total_I,Event_C,Total_C,data=infection_sub,sm='RR',
                            method='MH',studlab=paste(Authors,Years),label.e = 'Pro/Synbiotics')
 
-combination1_sub1<-metabin(Event_I,Total_I,Event_C,Total_C,data=infection_sub,sm='RR',byvar=The.type.of.surgery,
+combination1_sub1<-metabin(Event_I,Total_I,Event_C,Total_C,data=infection_sub,sm='RR',byvar=infection_sub$The.type.of.surgery2,
                       method='MH',studlab=paste(Authors,Years),label.e = 'Pro/Synbiotics')
 combination1_sub2<-metabin(Event_I,Total_I,Event_C,Total_C,data=infection_sub,sm='RR',byvar=type.of.treatment,
                            method='MH',studlab=paste(Authors,Years),label.e = 'Pro/Synbiotics')
