@@ -2,12 +2,6 @@ biomarker<-import('~/data/biomark2017-2019(剔除自身癌).sav')
 #baseline risk factors
 CA125<-biomarker%>%filter(sex_check==2 & !is.na(CA125))%>%transmute(
   CA125=CA125,CA125_pos=factor(ifelse(CA125>=35,1,0),levels=c(0,1),labels=c('阴性','阳性')),
-  FATH_sim=ifelse(cancerFH==2 | !is.na(CATPFath) |!is.na(CATPMoth) | !is.na(CATPBrot) |
-                    !is.na(Catpbrot1) |!is.na(Catpbrot2)| !is.na(Catpsist1) | !is.na(CATPSist) |
-                    !is.na(Catpsist2) |!is.na(CATPChil) | !is.na(Catpchil1) | !is.na(Catpchil2),1,0),
-  FATH_sim=factor(ifelse(is.na(FATH_sim),0,FATH_sim),levels=c(0,1),labels = c('否','是')),
-  breast_sim=ifelse(CATPMoth==47 |  CATPSist==47 | Catpsist1==47 | Catpsist2==47 | CATPChil==47 | Catpchil2==47,1,0),
-  breast_sim=factor(ifelse(is.na(breast_sim),0,breast_sim),levels=c(0,1),labels=c('否','是')),
   age_risk=ifelse(age<=49,'0',ifelse(age>=60,'2','1')),
   age_risk=factor(age_risk,levels = c(0,1,2),labels = c('<49','50-60','>60')), 
   marriage_risk=case_when(
