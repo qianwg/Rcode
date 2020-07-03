@@ -13,6 +13,7 @@ library(survival)
 library(dplyr)
 library(coin)
 library(MatchIt)
+library(forestmodel)
 ###2020/4/2
 #人群特征及其影响因素
 source('~/Rcode/statistics/OR.R')
@@ -21,6 +22,15 @@ my.render.cat <- function(x) {
   c("", sapply(stats.default(x), function(y) with(y,
                                                   sprintf("%d (%0.2f %%)", FREQ, PCT))))
 }
+mytheme<-theme(plot.title=element_text(hjust=0.5,face="bold"),
+               axis.title=element_text(face="bold",size=10),
+               axis.text=element_text(face="bold",size=9),
+               panel.grid.major = element_line(colour=NA),
+               panel.grid.minor = element_blank(),
+               panel.background=element_rect(fill=NA),
+               axis.line = element_line(color='black'),
+               legend.position = 'none'
+)
 #读取数据
 source('~/Rcode/biomarker/biomarker_data.R')
 #PG1,PG2,PGR的基本分布
@@ -258,6 +268,7 @@ statistic(lxl)^2
 #2020-4-13--PG test  and 胃镜检查结果
 gastroscopy<-import('~/data/示范区+做过胃镜的(2020-4-13).xlsx')
 match<-left_join(gastroscopy,pepsinogen,by=c('ID','name'))
+match3<-left_join(pepsinogen,gastroscopy,by=c('ID','name'))
 match%>%filter(!is.na(type))%>%
   ggbetweenstats(
     x = type,
@@ -298,6 +309,8 @@ legend("bottomright",legend=c("PG1, AUC: 0.76(0.66,0.86)",
                               "PGR, AUC: 0.84(0.76,0.94)"
                                ),
                               col=c("2","3","4","5"),lwd=3,cex=0.6)
+
+
 #不同诊断标准的灵敏度和特异度
 library(epiR)
 table<-match2%>%transmute(PG_pos2=ifelse(PG1<=30 & PGR<=3,1,0),
@@ -359,7 +372,494 @@ ggscatter(data=pepsinogen,x='PGR',y='CA199',add='reg.line',add.params = list(col
 #分类变量
 prop.table(with(pepsinogen,table(CA199_pos,PG_pos)),margin = 2)
 chisq_test(with(pepsinogen,table(CA199_pos,PG_pos)))
+export(match,'~/pep_match.xlsx')
 
+
+##########2020-5-23(胃蛋白酶原分析，将>=200的居民计算最小PGR值)
+#数据读取+查看
+library(pROC)
+rm(list=ls())
+pepsinogen<-import('~/data/pepsinogen.xlsx')
+str(pepsinogen)
+##
+roc_PG1<-roc(pepsinogen$type2, pepsinogen$PG1,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc_PG2<-roc(pepsinogen$type2, pepsinogen$PG2,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc_PGR<-roc(pepsinogen$type2, pepsinogen$PGR,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc_PG1R<-roc(pepsinogen$type2, pepsinogen$PG1+pepsinogen$PGR,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+#曲线下面积的比较
+roc.test(roc_PG1,roc_PG2)
+roc.test(roc_PG1,roc_PGR,method = "bootstrap",boot.n=10000)#p=0.06
+roc.test(roc_PG2,roc_PGR)
+roc.test(roc_PGR,roc_PG1R,method = "bootstrap",boot.n=10000)#p=0.12
+roc.test(roc_PG1,roc_PG1R,method = "bootstrap",boot.n=10000)#p<0.01
+#plot
+plot.roc(pepsinogen$type2, pepsinogen$PG1,direction='>',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(pepsinogen$type2, pepsinogen$PG2,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(pepsinogen$type2, pepsinogen$PGR,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+#plot
+plot.roc(pepsinogen$type2, pepsinogen$PG1,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="2")
+#lines.roc(match2$type2, match2$PG2,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="3")
+lines.roc(pepsinogen$type2, pepsinogen$PGR,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="4")
+#lines.roc(match2$type2, match2$PG1+match2$PGR,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="5")
+legend("bottomright",legend=c("PG1, AUC: 0.76(0.66,0.86)", 
+                              "PGR, AUC: 0.84(0.76,0.94)"
+),
+col=c("2",'4'),lwd=3,cex=0.6)
+##CA199 and CEA
+roc(pepsinogen$type2, pepsinogen$CA199,,direction='<',col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc(pepsinogen$type2, pepsinogen$CEA,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+plot.roc(pepsinogen$type2, pepsinogen$CA199,direction='<',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(pepsinogen$type2, pepsinogen$CEA,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+###
+plot.roc(pepsinogen$type2, pepsinogen$PG1,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="2")
+lines.roc(pepsinogen$type2, pepsinogen$PGR,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="3")
+lines.roc(pepsinogen$type2, pepsinogen$CA199,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="4")
+lines.roc(pepsinogen$type2, pepsinogen$CEA,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="5")
+legend("bottomright",legend=c("PG1, AUC: 0.76(0.66,0.86)", 
+                              "PGR, AUC: 0.84(0.76,0.94)",
+                              'CA199, AUC: 0.50(0.41,0.60)',
+                              "CEA, AUC: 0.53(0.45,0.62)"
+),
+col=c("2",'3','4','5'),lwd=3,cex=0.6)
+#不同指标的灵敏度和特异度
+roc(match2$type2, pepsinogen$PG1,,direction='>',col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc(match2$type2, pepsinogen$PGR,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+
+table<-match2%>%transmute(PG1_pos=ifelse(PG1<34.85,1,0),
+                          PGR_pos=ifelse(PGR<3.05,1,0),
+                          type=type2)
+#PG1
+table(table$PG1_pos,table$type)
+epi.tests(as.table(matrix(c(79,645,94,5201), nrow = 2, byrow = TRUE)))
+#PGR
+table(table$PGR_pos,table$type)
+epi.tests(as.table(matrix(c(111,297,60,5544), nrow = 2, byrow = TRUE)))
+#CA199
+table(table$CA199_pos,table$type)
+epi.tests(as.table(matrix(c(28,4032,8,1951), nrow = 2, byrow = TRUE)))
+#CEA
+table(table$CEA_pos,table$type)
+epi.tests(as.table(matrix(c(28,3635,8,2348), nrow = 2, byrow = TRUE)))
+
+
+  ###连续性变量
+variables2<-c('性别','年龄','家庭收入','教育','婚姻','就业状况','血型')
+variables4<-c("饮酒","喝茶","酸奶","蔬菜","水果","谷类","鸡蛋","杂粮","豆类",'坚果','菌类')
+variables5<-c("运动","快走","太极","广场舞","瑜伽","游泳","跑步","球类","器械","静态时间","手机使用时间")
+variables6<-c("糖尿病","高血压","高血脂","冠心病")
+variables7<-c('镉','石棉','镍','砷','氡','氯乙烯','X射线')
+variables8<-c('十二指肠溃疡','胃溃疡','胃息肉','幽门螺杆菌感染史','残胃')
+#基线
+pepsinogen2<-pepsinogen%>%filter(PG1!=200)
+table1(~年龄2+年龄+性别+家庭收入+教育+婚姻+就业状况+血型+
+         BMI+BMI_group+吸烟+被动吸烟,data=pepsinogen,render.categorical=my.render.cat)
+table<-pepsinogen%>%
+  pivot_longer(cols=c('婚姻','教育','就业状况','家庭收入','血型',"BMI_group","吸烟",'被动吸烟'),names_to='variables',values_to='levels')%>%
+  filter(!is.na(levels))%>%group_by(variables,levels)%>%summarise(n=n())%>%group_by(variables)%>%mutate(percent=round(n/sum(n),2))
+
+facet(ggbarplot(data=table,x='levels',y='percent',label = 'percent',lab.pos = 'out',fill='levels',xlab = '',ylab='百分比',x.text.angle=50),
+      facet.by = 'variables',scales='free',nrow=2)+theme(legend.position = 'none')+scale_y_continuous(limits=c(0,1))
+
+
+#PG1
+means_PG1<-pepsinogen%>%pivot_longer(cols=variables2,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))
+print(means_PG1,n=126)
+#p值
+p<-list()
+for(i in variables2){
+  formula_uni<-as.formula(paste('PG1','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PG2
+means_PG2<-pepsinogen%>%pivot_longer(cols=variables2,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG2),Q1=quantile(PG2,0.25),Q3=quantile(PG2,0.75))
+print(means_PG2,n=126)
+#p值
+p<-list()
+for(i in variables2){
+  formula_uni<-as.formula(paste('PG2','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PGR
+means_PGR<-pepsinogen%>%pivot_longer(cols=variables2,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PGR,na.rm=TRUE),Q1=quantile(PGR,0.25,na.rm=TRUE),Q3=quantile(PGR,0.75,na.rm=TRUE))
+print(means_PGR,n=126)
+#p值
+p<-list()
+for(i in variables2){
+  formula_uni<-as.formula(paste('PGR','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+##作图
+#年龄
+pepsinogen%>%filter(PG1!=200)%>%transmute(PG1=PG1,PG2=PG2,PGR=PGR,年龄=年龄)%>%pivot_longer(cols=c('PG1','PG2','PGR'),names_to = 'marker',values_to = 'value')%>%
+  ggplot(aes(x=年龄,y=value,fill=年龄))+geom_boxplot()+facet_wrap(.~marker,scales='free')+mytheme+border()
+
+#性别
+pepsinogen%>%filter(PG1!=200)%>%transmute(PG1=PG1,PG2=PG2,PGR=PGR,性别=性别)%>%pivot_longer(cols=c('PG1','PG2','PGR'),names_to = 'marker',values_to = 'value')%>%
+  ggplot(aes(x=性别,y=value,fill=性别))+geom_boxplot()+facet_wrap(.~marker,scales='free')+mytheme+border()
+
+
+
+
+
+
+###吸烟、被动吸烟、BMI
+
+means_PG1<-pepsinogen%>%pivot_longer(cols=c('吸烟','被动吸烟','BMI_group'),names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))
+print(means_PG1,n=126)
+#p值
+p<-list()
+for(i in c('吸烟','被动吸烟','BMI_group')){
+  formula_uni<-as.formula(paste('PG1','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#BMI
+ggboxplot(data=pepsinogen,x='BMI_group',y='PG1')+stat_compare_means(comparisons = list(c(0,1),c(0,2),c(0,3),c(1,2),c(1,3),c(2,3)),method='wilcox')+stat_compare_means()
+#性别分层
+means_PG1<-pepsinogen%>%pivot_longer(cols=c('吸烟','被动吸烟','BMI_group'),names_to='variable',values_to = 'level')%>%
+  group_by(性别,variable,level)%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))
+print(means_PG1,n=126)
+kruskal.test(PG1~吸烟,data=subset(pepsinogen,性别=='女'))
+kruskal.test(PG1~吸烟,data=subset(pepsinogen,性别=='男'))
+
+#PG2
+means_PG2<-pepsinogen%>%pivot_longer(cols=c('吸烟','被动吸烟','BMI_group'),names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG2),Q1=quantile(PG2,0.25),Q3=quantile(PG2,0.75))
+print(means_PG2,n=126)
+#p值
+p<-list()
+for(i in c('吸烟','被动吸烟','BMI_group')){
+  formula_uni<-as.formula(paste('PG2','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PGR
+means_PGR<-pepsinogen2%>%pivot_longer(cols=c('吸烟','被动吸烟','BMI_group'),names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PGR),Q1=quantile(PGR,0.25),Q3=quantile(PGR,0.75))
+print(means_PGR,n=126)
+#p值
+p<-list()
+for(i in c('吸烟','被动吸烟','BMI_group')){
+  formula_uni<-as.formula(paste('PGR','~', i))
+  if(length(table(pepsinogen2[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+}
+do.call(rbind,p)
+
+##饮食相关因素
+
+means_PG1<-pepsinogen%>%pivot_longer(cols=variables4,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))
+print(means_PG1,n=126)
+#p值
+p<-list()
+for(i in variables4){
+  formula_uni<-as.formula(paste('PG1','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PG2
+means_PG2<-pepsinogen%>%pivot_longer(cols=variables4,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG2),Q1=quantile(PG2,0.25),Q3=quantile(PG2,0.75))
+print(means_PG2,n=126)
+#p值
+p<-list()
+for(i in variables4){
+  formula_uni<-as.formula(paste('PG2','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PGR
+means_PGR<-pepsinogen2%>%pivot_longer(cols=variables4,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PGR),Q1=quantile(PGR,0.25),Q3=quantile(PGR,0.75))
+print(means_PGR,n=126)
+#p值
+p<-list()
+for(i in variables4){
+  formula_uni<-as.formula(paste('PGR','~', i))
+  if(length(table(pepsinogen2[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+}
+do.call(rbind,p)
+
+
+###常见慢性病
+
+
+means_PG1<-pepsinogen%>%pivot_longer(cols=variables6,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))
+print(means_PG1,n=126)
+#p值
+p<-list()
+for(i in variables6){
+  formula_uni<-as.formula(paste('PG1','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PG2
+means_PG2<-pepsinogen%>%pivot_longer(cols=variables6,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG2),Q1=quantile(PG2,0.25),Q3=quantile(PG2,0.75))
+print(means_PG2,n=126)
+#p值
+p<-list()
+for(i in variables6){
+  formula_uni<-as.formula(paste('PG2','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PGR
+means_PGR<-pepsinogen2%>%pivot_longer(cols=variables6,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PGR),Q1=quantile(PGR,0.25),Q3=quantile(PGR,0.75))
+print(means_PGR,n=126)
+#p值
+p<-list()
+for(i in variables6){
+  formula_uni<-as.formula(paste('PGR','~', i))
+  if(length(table(pepsinogen2[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+}
+do.call(rbind,p)
+
+
+##与特殊性疾病的相关性分析
+
+
+means_PG1<-pepsinogen%>%pivot_longer(cols=variables8,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))
+print(means_PG1,n=126)
+#p值
+p<-list()
+for(i in variables8){
+  formula_uni<-as.formula(paste('PG1','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PG2
+means_PG2<-pepsinogen%>%pivot_longer(cols=variables8,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG2),Q1=quantile(PG2,0.25),Q3=quantile(PG2,0.75))
+print(means_PG2,n=126)
+#p值
+p<-list()
+for(i in variables8){
+  formula_uni<-as.formula(paste('PG2','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#PGR
+means_PGR<-pepsinogen2%>%pivot_longer(cols=variables8,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PGR),Q1=quantile(PGR,0.25),Q3=quantile(PGR,0.75))
+print(means_PGR,n=126)
+#p值
+p<-list()
+for(i in variables8){
+  formula_uni<-as.formula(paste('PGR','~', i))
+  if(length(table(pepsinogen2[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen2)$p.value,4)
+  }
+}
+do.call(rbind,p)
+
+
+######矫正
+forest_model(lm(log(PG1)~性别+年龄+吸烟,data=pepsinogen),limits = c(-0.3,0.3))
+forest_model(lm(log(PG1)~性别+年龄+饮酒+酸奶+水果,data=pepsinogen),limits = c(-0.3,0.3))
+forest_model(lm(log(PG1)~性别+年龄+糖尿病+冠心病+高血压+高血脂,data=pepsinogen),limits = c(-0.3,0.3))
+forest_model(lm(log(PG1)~性别+年龄+十二指肠溃疡+幽门螺杆菌感染史+残胃+胃溃疡,data=pepsinogen),limits = c(-1.2,0.25))
+#
+forest_model(lm(log(PG1)~性别+年龄+糖尿病+冠心病+高血压+高血脂+幽门螺杆菌感染史,data=pepsinogen))
+
+
+#####
+pepsinogen%>%pivot_longer(cols=c('运动','静态时间','重大精神创伤'),names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))
+print(means_PG1,n=126)
+#p值
+p<-list()
+for(i in c('运动','静态时间','重大精神创伤')){
+  formula_uni<-as.formula(paste('PG1','~', i))
+  if(length(table(pepsinogen[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=pepsinogen)$p.value,4)
+  }
+}
+do.call(rbind,p)
+##### 分层分析kruskal.test
+PG1_split<-function(y){
+  x1<-pepsinogen[['性别']]
+  pepsinogen_split<-split(pepsinogen,x1)
+  formula_uni<-as.formula(paste('PG1','~', y)) 
+  a<-lapply(pepsinogen_split, function(x)x%>%group_by(x[[y]])%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75)))
+  b<-lapply(pepsinogen_split,function(x)wilcox.test(formula_uni,x))
+  out<-list(分层变量=a,分层变量2=b)
+  return(out)
+}
+PG1_split('年龄')
+PG1_split('吸烟')
+PG1_split('被动吸烟')
+PG1_split('BMI_group')
+PG1_split(y='饮酒')
+PG1_split(y='喝茶')
+PG1_split(y='酸奶')
+PG1_split(y='蔬菜')
+PG1_split(y='水果')
+PG1_split(y='谷类')
+PG1_split(y='鸡蛋')
+PG1_split(y='杂粮')
+PG1_split(y='豆类')
+PG1_split(y='坚果')
+PG1_split(y='菌类')
+PG1_split(y='运动')
+PG1_split(y='静态时间')
+PG1_split(y='重大精神创伤')
+PG1_split(y='十二指肠溃疡')
+PG1_split(y='幽门螺杆菌感染史')
+PG1_split(y='残胃')
+PG1_split(y='胃溃疡')
+PG1_split(y='胃息肉')
+pepsinogen%>%group_by(性别)%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))
+pepsinogen%>%group_by(性别)%>%summarise(n=n(),median=median(PG2),Q1=quantile(PG2,0.25),Q3=quantile(PG2,0.75))
+pepsinogen%>%group_by(性别)%>%summarise(n=n(),median=median(PGR,na.rm=TRUE),Q1=quantile(PGR,0.25,na.rm=TRUE),Q3=quantile(PGR,0.75,na.rm=TRUE))
+
+pepsinogen%>%transmute(PGI=ifelse(PG1<quantile(PG1,0.99,na.rm=T),PG1,NA),
+                       PGII=ifelse(PG2<quantile(PG2,0.99,na.rm=T),PG2,NA),
+                       PG_ratio=ifelse(PGR<quantile(PGR,0.99,na.rm=T),PGR,NA)
+)%>%pivot_longer(cols=c('PGI','PGII','PG_ratio'),names_to='marker',values_to='value')%>%ggplot(aes(x=value,y=..density..))+geom_histogram(bins=30,color='black',fill='white')+facet_wrap(marker~.,scales = 'free',nrow=1)+mytheme+labs(x='')+
+  stat_overlay_normal_density(color = "red", linetype = "dashed")
+
+####《《《《《《《《《《《2020-6-30
+#2020-4-13--PG test  and 胃镜检查结果
+gastroscopy<-import('~/data/示范区+做过胃镜的(2020-4-13-2).xlsx')
+pepsinogen$ID<-as.numeric(pepsinogen$ID)
+pepsinogen$name<-as.character(pepsinogen$name)
+
+match<-left_join(gastroscopy,pepsinogen,by=c('ID','name'))
+match3<-left_join(pepsinogen,gastroscopy,by=c('ID','name'))
+match%>%filter(!is.na(type))%>%
+  ggbetweenstats(
+    x = type,
+    y =PGR,
+    nboot = 10,type='np',
+    messages = FALSE,bf.message=FALSE,
+    pairwise.comparisons = TRUE, 
+    pairwise.display = "significant", 
+    pairwise.annotation = "p.value", 
+    p.adjust.method = "fdr", 
+    ggtheme = ggthemes::theme_tufte(),
+    package = "ggsci",
+    palette = "default_jco"
+  )  
+#区分萎缩性病变和正常或发炎患者
+match2<-left_join(pepsinogen,gastroscopy,by='ID')
+match2$type2<-ifelse(is.na(match2$type),0,1)
+roc_PG1<-roc(match2$type2, match2$PG1,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc_PG2<-roc(match2$type2, match2$PG2,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc_PGR<-roc(match2$type2, match2$PGR,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc_PG1R<-roc(match2$type2, match2$PG1+match2$PGR,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+#曲线下面积的比较
+roc.test(roc_PG1,roc_PG2)
+roc.test(roc_PG1,roc_PGR,method = "bootstrap",boot.n=10000)#p=0.06
+roc.test(roc_PG2,roc_PGR)
+roc.test(roc_PGR,roc_PG1R,method = "bootstrap",boot.n=10000)#p=0.12
+roc.test(roc_PG1,roc_PG1R,method = "bootstrap",boot.n=10000)#p<0.01
+#plot
+#par(mfrow=c(1,2))
+plot.roc(match2$type2, match2$PG1,direction='>',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,title="PG1")
+plot.roc(match2$type2, match2$PG2,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(match2$type2, match2$PGR,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,title="PGR")
+#plot
+plot.roc(match2$type2, match2$PG1,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="2")
+#lines.roc(match2$type2, match2$PG2,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="3")
+lines.roc(match2$type2, match2$PGR,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="4")
+#lines.roc(match2$type2, match2$PG1+match2$PGR,percent=F, reuse.auc=TRUE,axes=TRUE, legacy.axes=T, col="5")
+legend("bottomright",legend=c("PG1, AUC: 0.76(0.66,0.86)", 
+                              "PGR, AUC: 0.84(0.76,0.94)"
+),
+col=c("2","3","4","5"),lwd=3,cex=0.6)
+
+match2_smoke1<-match2%>%filter(吸烟=="目前仍在吸烟")
+match2_smoke2<-match2%>%filter(吸烟!="目前仍在吸烟")
+#par(mfrow=c(1,2))
+plot.roc(match2_smoke1$type2, match2_smoke1$PG1,direction='>',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T,title="PG1")
+plot.roc(match2_smoke2$type2, match2_smoke2$PG1,add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
 
 
 
