@@ -1,65 +1,103 @@
 rm(list=ls())
-library(ggplot)
-library(ggpubr)
-library(boot)
 #读取数据
-source('~/Rcode/biomarker/data.R')
-biomarker2<-biomarker%>%filter(!is.na(CEA))
-biomarker3<-biomarker2%>%filter(AFP<=quantile(CEA,0.75)+IQR(CEA) & CEA>=quantile(CEA,0.25)-IQR(CEA))
-##频率分布----------------------------------------------------------------------------------------------
-#频率计算
-ggplot(data=biomarker2,aes(x=CEA))+geom_histogram(binwidth = 1)+coord_cartesian(ylim=c(0,5))+scale_x_continuous(breaks=c(0,10,20,30,50,100,200,400,600,800))
-ggplot(data=biomarker2,aes(x=CEA))+geom_histogram(binwidth = 1)
-p1<-biomarker2%>%filter(CEA<=30)%>%
-ggplot(aes(x=CEA))+geom_histogram(aes(y=..density..),fill='grey',color='black',binwidth = 0.2)+
-  stat_function(fun = dnorm, args = list(mean = mean(biomarker2$CEA),sd = sd(biomarker2$CEA)),color='red')+theme_bw()+
-  geom_vline(xintercept = mean(biomarker2$CEA),colour='red',linetype=2)
-p1+geom_text(aes(x=mean(biomarker2$CEA),label=round(mean(biomarker2$CEA),2),y=median(x=layer_scales(p1)$y$range$range)),nudge_x = 1)
-##CEA_pos
-biomarker2%>%group_by(CEA_pos)%>%summarise(n=n())%>%transmute(CEA=CEA_pos,n=n,p=paste0(round(n/sum(n),4)*100,'%'))%>%
-  ggpie(x='n',label = 'p',fill='CEA',lab.pos = 'out',color='white',palette = c("#00AFBB", "#E7B800"))+
-  theme(legend.position = 'right')
-#基线变量的基本分布
-CEA_baseline<-biomarker2%>%
-  transmute(Sex=factor(sex,label=c('Man','Woman')),
-            Age=factor(Age_G1,labels = c('<=44','45-49','50-54','55-59','60-64','65-69','>=70')),
-             BMI=bmi,
-             smoking=factor(smoking,labels=c('Never','Current','Ago')),
-             alcohol=factor(alcohol,labels=c('No','Yes')),passivesmk=factor(passivesmk,labels=c('No','Yes')),
-            CEA=CEA,CEA_pos=CEA_pos
-             )
+source('~/Rcode/biomarker/data_CEA.R')
+variables<-c("癌症家族史" ,"肺癌家族史","乳腺癌家族史","肝癌家族史",        
+            "胃癌家族史","年龄","性别","腌制","饮酒","喝茶",              
+             "酸奶","吸烟","被动吸烟", "婚姻","教育","血型",              
+              "蔬菜","水果","谷类",  "鸡蛋","杂粮","豆类",              
+          "坚果","菌类","油炸","烧烤","熏制","运动",              
+             "快走","太极","广场舞","瑜伽","游泳","跑步",              
+             "球类","器械","静态时间",  "手机使用时间","弥漫性肺间质纤维化" ,"肺结核",            
+              "慢性支气管炎","肺气肿","哮喘支气管扩张", "脂肪肝","肝硬化","慢性乙型肝炎",      
+             "慢性丙型肝炎","十二指肠溃疡","萎缩性胃炎","胃溃疡","胃息肉","幽门螺杆菌感染史",  
+             "胃粘膜异性增生","胃肠上皮化生","残胃", "糖尿病","高血压","高血脂",            
+              "冠心病","中风","镉","石棉","镍","砷", "氡","氯乙烯","X射线", "苯" )
+my.render.cat <- function(x) {
+  c("", sapply(stats.default(x), function(y) with(y,sprintf("%d (%0.2f %%)", FREQ, PCT))))
+}
 
-table1::table1(~Sex+Age+BMI+smoking+alcohol | CEA_pos,data=CEA_baseline,render.continuous=c(.="Median [Q1,Q3]"))
-#--------------------------------------------------------------------------------------------------
-###
-biomarker2%>%select(bmi_group3,sex,CEA)%>%transmute(
-  bmi=factor(bmi_group3,labels=c('Lower','Normal','Obesity')),
-  sex=factor(sex,labels=c('man','woman')),
-  CEA=log(CEA))%>%filter(!is.na(bmi))%>%
-  grouped_ggbetweenstats(
-    x = bmi,
-    y =CEA ,
-    ylab='log(CEA)',
-    xlab='BMI',
-    k=2,
-    nboot = 10,
-    grouping.var = sex,
-    effsize.type = "unbiased", 
-    messages = FALSE,
-    pairwise.comparisons = TRUE, # display results from pairwise comparisons
-    pairwise.display = "significant", # display only significant pairwise comparisons
-    pairwise.annotation = "p.value", # annotate the pairwise comparisons using p-values
-    p.adjust.method = "fdr", # adjust p-values for multiple tests using this method
-    ggtheme = ggthemes::theme_tufte(),
-    package = "ggsci",
-    palette = "default_jco"
-  ) 
-library(effects)
-biomarker2$CEA.log<-log(biomarker2$CEA)
-biomarker2%>%filter(!is.na(bmi_group3))%>%group_by(bmi_group3)%>%summarise(mean=mean(CEA.log,na.rm = TRUE),sd=(sd(CEA.log,na.rm = TRUE))/sqrt(length(CEA.log)))
-biomarker2$bmi_group3<-factor(biomarker2$bmi_group3)
-fit<-aov(log(CEA)~bmi_group3,data=biomarker2)
-summary(fit)
-data.frame(effect('bmi_group3',fit))
-###疾病史
+#连续型变量(单因素分析)
+means_CEA<-CEA%>%pivot_longer(cols=variables,names_to='variable',values_to = 'level')%>%
+  group_by(variable,level)%>%summarise(n=n(),median=median(CEA),Q1=quantile(CEA,0.25),Q3=quantile(CEA,0.75))
+print(means_CEA,n=126)
+p<-list()
+for(i in variables){
+  formula_uni<-as.formula(paste('CEA','~', i))
+  if(length(table(CEA[,i]))==2){
+    p[[i]]<-round(wilcox.test(formula_uni,data=CEA)$p.value,4)
+  }
+  else{
+    p[[i]]<-round(kruskal.test(formula_uni,data=CEA)$p.value,4)
+  }
+}
+do.call(rbind,p)
+#多因素回归分析
+summary(glm(log(CEA)~.,data=CEA[,c('CEA',variables)]))
+
+#CEA作为二分类变量(CEA>5)
+#频率分布+单因素分析
+table1(~肝癌家族史+年龄+就业状况+BMI+偏咸+腌制+饮酒+喝茶+
+         酸奶+吸烟+被动吸烟+婚姻+教育+血型+蔬菜+水果+谷类+鸡蛋+杂粮+豆类+坚果+
+         +菌类+油炸+烧烤+熏制+运动+快走+太极+广场舞+瑜伽+游泳+跑步+球类+器械
+       静态时间+手机使用时间+胆囊息肉+胆结石+脂肪肝+肝硬化+慢性乙型肝炎+慢性丙型肝炎+血吸虫感染史+
+         糖尿病+高血压+高血脂+冠心病+中风+镉+石棉+镍+砷+氡+氯乙烯+X射线 | CEA_pos, data=CEA,render.categorical=my.render.cat)
+p2<-list()
+for(i in variables){
+  y<-AFP[[i]]
+  p2[[i]]<-round(chisq.test(table(y,CEA$CEA_pos))$p.value,3)
+}
+do.call(rbind,p2)
+#多因素logistic回归
+#多重共线性检验
+vif_data<-vif(glm(CEA_pos~.,family='binomial',data=CEA[,c('CEA_pos',variables)]))
+vif_data
+sort(vif_data,decreasing = TRUE)
+#logistic回归
+summary(glm(CEA_pos~.,data=CEA[,c('CEA_pos',variables)],family='binomial'))
+logit(y='CEA_pos',x=c("癌症家族史" ,"肺癌家族史","乳腺癌家族史","肝癌家族史",        
+                      "胃癌家族史","年龄","性别","腌制","饮酒","喝茶",              
+                      "酸奶","吸烟","被动吸烟", "婚姻","教育","血型",              
+                      "蔬菜","水果","谷类",  "鸡蛋","杂粮","豆类",              
+                      "坚果","菌类","油炸","烧烤","熏制","运动",              
+                      "快走","太极","广场舞","瑜伽","游泳","跑步",              
+                      "球类","器械","静态时间",  "手机使用时间","弥漫性肺间质纤维化" ,"肺结核",            
+                      "慢性支气管炎","肺气肿","哮喘支气管扩张", "脂肪肝","肝硬化","慢性乙型肝炎",      
+                      "慢性丙型肝炎","十二指肠溃疡","萎缩性胃炎","胃溃疡","胃息肉","幽门螺杆菌感染史",  
+                      "胃粘膜异性增生","胃肠上皮化生","残胃", "糖尿病","高血压","高血脂",            
+                      "冠心病","中风","镉","石棉","镍","砷", "氡","氯乙烯","X射线", "苯" ),data=CEA)
+
+#lasso-logistic回归
+AFP_2<-na.omit(CEA[,c('CEA_pos',variables)])
+x<-model.matrix(CEA_pos~.,CEA_2,contrasts.arg = lapply(CEA_2[ ,sapply(CEA_2, is.factor)], contrasts, contrasts = FALSE ))
+x<-x[,-1]
+y<-CEA_2[,c('CEA_pos')]
+lasso <- glmnet(x,y, family = "binomial", alpha = 1)
+plot(lasso, xvar = "lambda", label = TRUE)
+cv_output<-cv.glmnet(x,y,alpha=1,family='binomial')#lambda
+plot(cv_output)
+coef(cv_output,s='lambda.min')#系数
+get_coe(cv_output,cv_output$lambda.min)
+#group-lasso logistic
+group<-c()
+fit <- grpreg(x, y, group, penalty="grLasso", family="binomial")
+plot(fit)
+cvfit<- cv.grpreg(x, y, group, penalty="grLasso",family='binomial')
+plot(cvfit)
+as.matrix(coef(cvfit,lambda=cvfit$lambda.min))
+#对于肝癌的诊断效果(诊断效果很差的)
+roc(CEA$CA, CEA$CEA,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc(CEA$CA_lung, CEA$CEA,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc(CEA$CA_liver, CEA$CEA,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc(CEA$CA_gastric, CEA$CEA,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+#只针对于女性
+roc(CEA$CA_type_female, CEA$CEA,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+roc(CEA$CA_breast, CEA$CEA,col="red",legacy.axes="TRUE",ci="TRUE",print.ci=TRUE)
+#plot
+plot.roc(CEA$CA, CEA$CEA,direction='<',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(CEA$CA_liver, CEA$CEA,direction='<',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(CEA$CA_gastric, CEA$CEA,direction='<',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(CEA$CA_lung, CEA$CEA,direction='<',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(CEA$CA_type_female, CEA$CEA,direction='<',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+plot.roc(CEA$CA_breast, CEA$CEA,direction='<',add=F,legacy.axes=T,las=1,col="red", print.auc=T,print.thres=T)
+
 
