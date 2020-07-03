@@ -43,7 +43,19 @@ screening<-import('~/data/女性生理与生育年龄趋势.sav')
 #数据处理
 screening2<-screening%>%filter(CASelf==1)%>%transmute(
   ID_BLAST=ID_BLAST,
-  筛查年份=Year,婚姻=factor(ifelse(marriag<5,marriag,NA)),
+  筛查年份=Year,
+  #饮食因素
+  肉制品=factor(ifelse(meat==2 & !is.na(meat),1,0),levels=c(0,1),labels=c('否','是')),
+  鸡蛋=factor(ifelse(egg==2 & !is.na(egg),1,0),levels=c(0,1),labels=c('否','是')),
+  蔬菜=factor(ifelse(veget==2 & !is.na(veget),1,0),levels=c(0,1),labels=c('否','是')),
+  水果=factor(ifelse(fruit==2 & !is.na(fruit),1,0),levels=c(0,1),labels=c('否','是')),
+  豆类=factor(ifelse(beans==2 & !is.na(beans),1,0),levels=c(0,1),labels=c('否','是')),
+  婚姻=case_when(
+    marriag==1 ~ 1,
+    marriag==2 ~ 2,
+    marriag==3 | marriag==4 ~ 3,
+    ),
+  婚姻=factor(婚姻,levels=c(1,2,3),labels=c('已婚','未婚','离婚/丧偶')),
   height=ifelse(height<quantile(screening$height,0.001,na.rm = T) | height>quantile(screening$height,0.999,na.rm = T),NA,height),
   weight=ifelse(weight<quantile(screening$weight,0.001,na.rm = T) | weight>quantile(screening$weight,0.999,na.rm = T),NA,weight),
   
@@ -82,12 +94,39 @@ screening2<-screening%>%filter(CASelf==1)%>%transmute(
   ),
   绝育手术=factor(ifelse(is.na(sterilizat),1,sterilizat),levels = c(1,2),labels = c('否','是')),
   子宫摘除术=factor(ifelse(is.na(hysterecto),1,hysterecto),levels = c(1,2),labels = c('否','是')),
-  卵巢摘除术=factor(ifelse(is.na(ovariectom),1,ovariectom),levels = c(1,2),labels = c('否','是'))
+  卵巢摘除术=factor(ifelse(is.na(ovariectom),1,ovariectom),levels = c(1,2),labels = c('否','是')),
+  CA=CA,CA_type=CA_type,CA125=CA125,CA153=CA153,
+  #乳腺超声影像学特征
   
+  左乳超声描述=factor(LBultraso,levels=c(1,2,3),labels=c('未见异常','增生','乳导管扩张')),
+  右乳超声描述=factor(RBultraso,levels=c(1,2,3),labels=c('未见异常','增生','乳导管扩张')),
+  左乳肿块=factor(LBlump,levels = c(1,2),labels = c('无','有')),
+  右乳肿块=factor(RBlump,levels = c(1,2),labels = c('无','有')),
+  左乳钙化=factor(LBcalcifi,levels = c(1,2),labels=c('无','有')),
+  右乳钙化=factor(RBcalcifi,levels = c(1,2),labels=c('无','有')),
+  左乳周围组织异常=factor(LBperitiss,levels = c(1,2),labels=c('无','有')),
+  右乳周围组织异常=factor(RBperitiss,levels = c(1,2),labels=c('无','有')),
+  左乳淋巴结肿大=factor(LBaxilymno,levels = c(1,2),labels=c('无','有')),
+  右乳淋巴结肿大=factor(RBaxilymno,levels = c(1,2),labels=c('无','有')),
+  乳腺超声描述=factor(ifelse(左乳超声描述=="未见异常" & 右乳超声描述=="未见异常",1,2),levels=c(1,2),labels=c('未见异常','增生/乳导管扩张')),
+  肿块=factor(ifelse(左乳肿块=="有" | 右乳肿块=="有",2,1),levels=c(1,2),labels=c('无','有')),
+  钙化=factor(ifelse(左乳钙化=="有" | 右乳钙化=="有",2,1),levels=c(1,2),labels=c('无','有')),
+  周围组织异常=factor(ifelse(左乳周围组织异常=="有" | 右乳周围组织异常=="有",2,1),levels=c(1,2),labels=c('无','有')),
+  淋巴结肿大=factor(ifelse(左乳淋巴结肿大=="有" | 右乳淋巴结肿大=="有",2,1),levels=c(1,2),labels=c('无','有')),
+  乳腺组织构成=factor(ultrBRTDEN,levels = c(1,2,3),labels=c('均质-脂肪','均质-纤维腺体','不均质')),
+  BIRADS=case_when(
+    ultrBIRADS<=2 ~ 1,
+    ultrBIRADS==3 ~ 2,
+    ultrBIRADS>=3 ~ 3,
+  ),
+  BIRADS=factor(BIRADS,levels = c(1,2,3),labels=c('<=2','==3','>=4'))
 )%>%transmute(ID_BLAST=ID_BLAST,筛查年份,婚姻, BMI=round(weight/((height/100)^2),2),
-                  出生年份,地区,初筛年龄,教育,就业状况,职业,初潮年龄,绝经,绝经年龄,生育,生育次数,
+              肉制品,鸡蛋,蔬菜,水果,豆类,
+                  出生年份,地区,初筛年龄,教育,就业状况,职业,初潮年龄,绝经,绝经年龄,生育,生育次数,CA125,CA153,
                   初次生育年龄,哺乳,哺乳月份,流产,人工流产,自然流产,人工流产次数,自然流产次数,生育年份,流产情况分组,绝育手术,子宫摘除术,卵巢摘除术,
-                  出生队列=factor(case_when(
+                   BIRADS,乳腺组织构成,左乳超声描述,右乳超声描述,乳腺超声描述,左乳肿块,右乳肿块,肿块,左乳钙化,右乳钙化,钙化,左乳周围组织异常,
+                    右乳周围组织异常,周围组织异常,左乳淋巴结肿大,右乳淋巴结肿大,淋巴结肿大,
+                   出生队列=factor(case_when(
                     出生年份<1950 ~ 1, 
                     between(出生年份,1950,1959) ~ 2,
                     between(出生年份,1960,1969) ~ 3,
@@ -141,12 +180,22 @@ screening2<-screening%>%filter(CASelf==1)%>%transmute(
                 出生年份分组=factor(出生年份分组,levels=c(0,1,2,3,4,5,6,7),
                                     labels=c('<1945','1945-1949','1950-1954',
                                              '1955-1959','1960-1964','1965-1969','1970-1974','>=1975')),
+              出生年份分组2=case_when(
+                between(出生年份,1943,1949) ~ 1,
+                between(出生年份,1950,1959) ~ 2,
+                between(出生年份,1960,1969) ~ 3,
+                between(出生年份,1970,1979) ~ 4,
+              ),
+              出生年份分组2=factor(出生年份分组2,levels=c(1,2,3,4),
+                                  labels=c('1943-1949','1950-1959',
+                                           '1960-1969','1970-1979')),
                   BMI分组=case_when(
                     BMI<24 & BMI>=18.5 ~ 0,#正常
                     BMI<18.5 ~ 1,#偏瘦
                     BMI<28 & BMI>=24 ~ 2,#超重
                     BMI>=28 ~ 3#肥胖
                   ),
-              BMI分组=factor(BMI分组,levels = c(0,1,2,3),labels = c('18.5-23.9','<18.5','24-27.9','>=28'))
+              BMI分组=factor(BMI分组,levels = c(0,1,2,3),labels = c('18.5-23.9','<18.5','24-27.9','>=28')),
+              CA=CA,CA_type=CA_type,CA=CA,CA_type=CA_type
 )
 #%>%filter(出生年份<=1979 & 出生年份>=1945,!is.na(绝经),!is.na(初潮年龄))
