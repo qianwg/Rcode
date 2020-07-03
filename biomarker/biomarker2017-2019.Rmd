@@ -18,10 +18,12 @@ library(ggpubr)
 library(table1)
 library(tidyr)
 library(pROC)
+library(knitr)
+library(kableExtra)
 ```
 ```{r 读取数据, echo=FALSE}
 #读取数据
-biomarker<-import('C:/Users/sheng/Desktop/biomark2017-2019(剔除自身癌).sav')
+biomarker<-import('~/data/biomark2017-2019(剔除自身癌).sav')
 ```
 ```{r 基线数据准备, echo=FALSE}
 #baseline risk factors
@@ -91,6 +93,7 @@ biomarker<-import('C:/Users/sheng/Desktop/biomark2017-2019(剔除自身癌).sav'
                        passivesmk==2 & psmkyrs>=10 ~ 2,
                      ),
                      psmk_risk=ifelse(is.na(psmk_risk),0,psmk_risk),
+                     psmk_risk2=factor(passivesmk),
                      BMI_risk=ifelse(10000*weight/(height*height)<24,0,ifelse(10000*weight/(height*height)<28,1,2)),
                      BMI_risk=ifelse(is.na(BMI_risk),0,BMI_risk),
                      #饮食
@@ -105,6 +108,9 @@ biomarker<-import('C:/Users/sheng/Desktop/biomark2017-2019(剔除自身癌).sav'
                      beans_risk=ifelse(beans==2 & !is.na(beans),1,0),
                      nuts_risk=ifelse(nuts==2 & !is.na(nuts),1,0),
                      fungus_risk=ifelse(fungus==2 & !is.na(fungus),1,0),
+                  #饮食偏好
+                  salty_risk=ifelse(salty==2 & !is.na(salty),1,0),
+                  salted_risk=ifelse(salted==2 & !is.na(salted),1,0),
                      #体育锻炼
                      exercise_risk=ifelse(exercise==2 & !is.na(exercise),1,0),
                      jog_risk=factor(ifelse(jog==2,1,0),levels=c(0,1),labels=c('否','是')),#快走
@@ -166,10 +172,10 @@ biomarker<-import('C:/Users/sheng/Desktop/biomark2017-2019(剔除自身癌).sav'
                   
                      )%>%transmute(CEA=CEA,AFP=AFP,CA199=CA199,CA153=CA153,CA125=CA125,PG=PG,HBsAg=HBsAg,
                       CEA_pos=CEA_pos,AFP_pos=AFP_pos,CA199_pos=CA199_pos,CA153_pos=CA153_pos,CA125_pos=CA125_pos,PG_pos=PG_pos,HBsAg_pos=HBsAg_pos,AFP_contin=AFP_contin,CEA_contin=CEA_contin,CA199_contin=CA199_contin,CA125_contin=CA125_contin,CA153_contin=CA153_contin,PG1_contin=PG1_contin,PGR_contin=PGR_contin,癌症家族史=FATH_sim,肺癌家族史=lung_sim,乳腺癌家族史=breast_sim,肝癌家族史=liver_sim,胃癌家族史=gastric_sim,
-                  年龄=factor(age_risk,levels=c(0,1,2),labels=c('<50','50-59','>=60')),性别=factor(sex_risk,levels=c(0,1),labels=c('男性','女性')),家庭收入=income_risk,就业状况=employm_risk,BMI=factor(BMI_risk),BMI2=factor(BMI_risk,levels = c(0,1,2,3),labels=c('<24','24-27.9','>=28','P value')),饮酒=factor(alcohol_risk),喝茶=factor(tea_risk),酸奶=factor(yogurt_risk),吸烟=factor(smk_risk),吸烟2=smk_risk2,被动吸烟=factor(psmk_risk),婚姻=marriage_risk,教育=education_risk,血型=blood_risk,蔬菜=factor(veget_risk),水果=factor(fruit_risk),谷类=factor(grain_risk),鸡蛋=factor(egg_risk),杂粮=factor(cereal_risk),豆类=factor(beans_risk),坚果=factor(nuts_risk),菌类=factor(fungus_risk),运动=factor(exercise_risk),快走=jog_risk,太极=taichi_risk,广场舞=fitdance_risk,瑜伽=yoga_risk,游泳=swim_risk,跑步=run_risk,球类=ball_risk,器械=apparatus_risk,静态时间=factor(sedentaryh_risk),手机使用时间=cellphoneh_risk,弥漫性肺间质纤维化=disea1_risk,肺结核=disea2_risk,慢性支气管炎=disea3_risk,肺气肿=disea4_risk,哮喘支气管扩张=disea5_risk,矽肺或尘肺=disea6_risk,胆囊息肉=disea7_risk,胆结石=disea8_risk,脂肪肝=disea9_risk,肝硬化=disea10_risk,慢性乙型肝炎=disea11_risk,慢性丙型肝炎=disea12_risk,血吸虫病感染史=disea13_risk,食管或胃上皮内瘤变=disea14_risk,十二指肠溃疡=disea15_risk,Barrett食管=disea16_risk,萎缩性胃炎=disea17_risk,胃溃疡=disea18_risk,胃息肉=disea19_risk,幽门螺杆菌感染史=disea20_risk,EB病毒感染史=disea21_risk,胃粘膜异性增生=disea22_risk,胃肠上皮化生=disea23_risk,残胃=disea24_risk,乳腺小叶不典型增生=disea25_risk,乳腺导管不典型增生=disea26_risk,乳腺小叶原位癌=disea27_risk,糖尿病=disea28_risk,高血压=disea29_risk,高血脂=disea30_risk,冠心病=disea31_risk,中风=disea32_risk,镉=cadmium_risk,石棉=asbestos_risk,镍=nickel_risk,砷=arsenic_risk,氡=radon_risk,氯乙烯=chloroethy_risk,X射线=Xray_risk,苯=benzene_risk,CA=CA,CA_type=CA_type,
+                  年龄=factor(age_risk,levels=c(0,1,2),labels=c('<50','50-59','>=60')),性别=factor(sex_risk,levels=c(0,1),labels=c('男性','女性')),家庭收入=income_risk,就业状况=employm_risk,BMI=factor(BMI_risk),BMI2=factor(BMI_risk,levels = c(0,1,2,3),labels=c('<24','24-27.9','>=28','P value')),偏咸=factor(salty_risk),腌制=factor(salted_risk),饮酒=factor(alcohol_risk),喝茶=factor(tea_risk),酸奶=factor(yogurt_risk),吸烟=factor(smk_risk),吸烟2=smk_risk2,被动吸烟=factor(psmk_risk),被动吸烟2=psmk_risk2,婚姻=marriage_risk,教育=education_risk,血型=blood_risk,蔬菜=factor(veget_risk),水果=factor(fruit_risk),谷类=factor(grain_risk),鸡蛋=factor(egg_risk),杂粮=factor(cereal_risk),豆类=factor(beans_risk),坚果=factor(nuts_risk),菌类=factor(fungus_risk),运动=factor(exercise_risk),快走=jog_risk,太极=taichi_risk,广场舞=fitdance_risk,瑜伽=yoga_risk,游泳=swim_risk,跑步=run_risk,球类=ball_risk,器械=apparatus_risk,静态时间=factor(sedentaryh_risk),手机使用时间=cellphoneh_risk,弥漫性肺间质纤维化=disea1_risk,肺结核=disea2_risk,慢性支气管炎=disea3_risk,肺气肿=disea4_risk,哮喘支气管扩张=disea5_risk,矽肺或尘肺=disea6_risk,胆囊息肉=disea7_risk,胆结石=disea8_risk,脂肪肝=disea9_risk,肝硬化=disea10_risk,慢性乙型肝炎=disea11_risk,慢性丙型肝炎=disea12_risk,血吸虫病感染史=disea13_risk,食管或胃上皮内瘤变=disea14_risk,十二指肠溃疡=disea15_risk,Barrett食管=disea16_risk,萎缩性胃炎=disea17_risk,胃溃疡=disea18_risk,胃息肉=disea19_risk,幽门螺杆菌感染史=disea20_risk,EB病毒感染史=disea21_risk,胃粘膜异性增生=disea22_risk,胃肠上皮化生=disea23_risk,残胃=disea24_risk,乳腺小叶不典型增生=disea25_risk,乳腺导管不典型增生=disea26_risk,乳腺小叶原位癌=disea27_risk,糖尿病=disea28_risk,高血压=disea29_risk,高血脂=disea30_risk,冠心病=disea31_risk,中风=disea32_risk,镉=cadmium_risk,石棉=asbestos_risk,镍=nickel_risk,砷=arsenic_risk,氡=radon_risk,氯乙烯=chloroethy_risk,X射线=Xray_risk,苯=benzene_risk,CA=CA,CA_type=CA_type,
                   CA_type_female=ifelse(CA_type=='宫颈癌' | CA_type=='乳腺癌' | CA_type=='输卵管癌' | CA_type=='子宫内膜癌',1,0)
 )
-
+baseline_compare2<-baseline_compare%>%select(-(CEA_pos:PGR_contin),-BMI2,-吸烟2,-(CA:CA_type_female),-(蔬菜:手机使用时间),-(镉:苯),-弥漫性肺间质纤维化,-(食管或胃上皮内瘤变:Barrett食管),-(乳腺小叶不典型增生:乳腺小叶原位癌))
 baseline_compare_female<-baseline_compare%>%filter(性别=='女性')
 baseline_compare_female2<-baseline_compare_female%>%filter(CA_type_female!=2)
 ```
@@ -214,6 +220,45 @@ data_summary<-function(x){
                   Kurtosis=g2,row.names = 1)
        
 }
+#单因素和多因素logistic回归OR合并
+
+logit<-function(y,x,data){
+  #单因素 
+  result1<-data.frame()
+  for(i in x){
+    formula_uni<-as.formula(paste(y,'~', i))
+    modelit_uni<-glm(formula_uni,data,family = 'binomial')
+    tableit_uni<-data.frame(summary(modelit_uni)$coef)
+    tableit_uni$OR<-exp(tableit_uni$Estimate)
+    tableit_uni$LCL <- exp(tableit_uni$Estimate - tableit_uni$Std..Error * 1.96 )
+    tableit_uni$UCL <- exp(tableit_uni$Estimate + tableit_uni$Std..Error * 1.96 )
+    tableit_uni$`p-value` <- tableit_uni$Pr...z..
+    tableit_uni$`OR(95%CI)`<-paste0(round(tableit_uni$OR,2),'(',round(tableit_uni$LCL,2),round(tableit_uni$UCL,2),')')
+    result1 <- rbind(result1,tableit_uni[,c(9,8)])
+  }
+  result1<-cbind(variable=row.names(result1), result1)
+  row.names(result1)=NULL
+  #多因素
+  formula<- as.formula(paste(y,'~', paste(x, collapse= "+")))
+  modelit<-glm(formula,data,family = 'binomial')
+  tableit<-data.frame(summary(modelit)$coef)
+  tableit$OR<-exp(tableit$Estimate)
+  tableit$LCL <- exp(tableit$Estimate - tableit$Std..Error * 1.96 )
+  tableit$UCL <- exp(tableit$Estimate + tableit$Std..Error * 1.96 )
+  tableit$`p-value(adjusted)` <- tableit$Pr...z..
+  tableit$`aOR(95%CI)`<-paste0(round(tableit$OR,2),'(',round(tableit$LCL,2),round(tableit$UCL,2),')')
+  result2 <- tableit[-1,c(9,8)]
+  result2<-cbind(variable=row.names(result2), result2)
+  row.names(result2)=NULL
+  #合并
+  result<-merge(result1,result2,by='variable',all.x=FALSE,all.y=FALSE)
+  result<-kable(result, digits = 2, align = rep('c',4)) %>%
+    kable_styling(bootstrap_options = "striped", full_width = F,position = 'left')
+  return(result)
+  
+  
+}
+
 #BMI
 rndr_baseline_BMI<-function(x, name, ...){
   if (length(x) == 0) {
@@ -399,68 +444,70 @@ biomarker%>%transmute(
 ```
 
 **1.2、不同肿瘤标志物筛查阳性与阴性人群的基本人群特征分布比较**     
-
 **1.2.1、CEA筛查阳性与阴性人群的基本人群特征分布比较**     
 ```{r CEA, echo=FALSE}
 table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | CEA,render.categorical=my.render.cat,
        data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F) 
+logit(y='CEA',x=c('年龄','性别','教育','婚姻','血型','就业状况'),data=baseline_compare)
 ``` 
-
 **1.2.2、AFP筛查阳性与阴性人群的基本人群特征分布比较**   
 ```{r AFP, echo=FALSE}
 table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | AFP,render.categorical=my.render.cat,
        data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F) 
+logit(y='AFP',x=c('年龄','性别','教育','婚姻','血型','就业状况'),data=baseline_compare)
 ```    
-
 **1.2.3、CA199筛查阳性与阴性人群的基本人群特征分布比较**    
 ```{r CA199 ,echo=FALSE}
 table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | CA199,render.categorical=my.render.cat,
        data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F) 
+logit(y='CA199',x=c('年龄','性别','教育','婚姻','血型','就业状况'),data=baseline_compare)
 ```
 
 **1.2.4、CA125筛查阳性与阴性人群的基本人群特征分布比较**   
 ```{r CA125 ,warning=FALSE,echo=FALSE}
 table1(~年龄+教育+婚姻+血型+血型+就业状况 | CA125,render.categorical=my.render.cat,
        data=baseline_compare_female,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F) 
+logit(y='CA125',x=c('年龄','性别','教育','婚姻','血型','就业状况'),data=baseline_compare)
 ```
 
 **1.2.5、CA153筛查阳性与阴性人群的基本人群特征分布比较**  
 ```{r CA153, echo=FALSE}
 table1(~年龄+教育+婚姻+血型+血型+就业状况 | CA153,render.categorical=my.render.cat,
        data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F) 
+logit(y='CA153',x=c('年龄','性别','教育','婚姻','血型','就业状况'),data=baseline_compare)
 ```    
 
 **1.2.6、PG筛查阳性与阴性人群的基本人群特征分布比较** 
 ```{r PG ,warning=FALSE,echo=FALSE}
-table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | PG,render.categorical=my.render.cat,
+table1(~年龄+性别+教育+婚姻+血型+血型+就业状况+家庭收入+BMI+静态时间+手机使用时间+偏咸+腌制+被动吸烟2 | PG,render.categorical=my.render.cat,
        data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F) 
+logit(y='PG',x=c('年龄','性别','教育','婚姻','血型','就业状况'),data=baseline_compare)
 ``` 
 
 **1.2.7、HBsAg筛查阳性与阴性人群的基本人群特征分布比较**   
 ```{r HbsAg ,message=FALSE, warning=FALSE,echo=FALSE}
 table1(~年龄+性别+教育+婚姻+血型+血型+就业状况 | HBsAg,render.categorical=my.render.cat,
        data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F) 
+logit(y='HBsAg',x=c('年龄','性别','教育','婚姻','血型','就业状况'),data=baseline_compare)
 ```
 
 **1.3、不同肿瘤标志物筛查阳性与癌症共性危险因素之间的关联分析**    
 
 **1.3.1、肿瘤标志物筛查阳性与吸烟及被动吸烟之间的关联分析**     
 ```{r ,warning=FALSE,echo=FALSE}
-table1(~吸烟+吸烟2+被动吸烟 | CEA,render.categorical=my.render.cat,
-       data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与吸烟及被动吸烟之间的关联') 
-table1(~吸烟+吸烟2+被动吸烟 | AFP,render.categorical=my.render.cat,
-       data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F,caption='AFP与吸烟及被动吸烟之间的关联') 
-table1(~吸烟+吸烟2+被动吸烟 | CA199,render.categorical=my.render.cat,
-       data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与吸烟及被动吸烟之间的关联') 
-table1(~吸烟+吸烟2+被动吸烟 | CA125,render.categorical=my.render.cat,
-       data=baseline_compare_female,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F,caption='CA125与吸烟及被动吸烟之间的关联') 
-table1(~吸烟+吸烟2+被动吸烟 | CA153,render.categorical=my.render.cat,
-       data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA199与吸烟及被动吸烟之间的关联') 
+table1(~吸烟+吸烟2+被动吸烟 | CEA,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与吸烟及被动吸烟之间的关联') 
 
-table1(~吸烟+吸烟2+被动吸烟 | PG,render.categorical=my.render.cat,
-       data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与吸烟及被动吸烟之间的关联') 
-table1(~吸烟+吸烟2+被动吸烟 | HBsAg,render.categorical=my.render.cat,
-       data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与吸烟及被动吸烟之间的关联') 
+table1(~吸烟+吸烟2+被动吸烟 | AFP,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_AFP,render.strat=rndr.strat,droplevels = F,caption='AFP与吸烟及被动吸烟之间的关联') 
+
+table1(~吸烟+吸烟2+被动吸烟 | CA199,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与吸烟及被动吸烟之间的关联') 
+
+table1(~吸烟+吸烟2+被动吸烟 | CA125,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA125,render.strat=rndr.strat,droplevels = F,caption='CA125与吸烟及被动吸烟之间的关联') 
+
+table1(~吸烟+吸烟2+被动吸烟 | CA153,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA199与吸烟及被动吸烟之间的关联') 
+
+table1(~吸烟+吸烟2+被动吸烟 | PG,render.categorical=my.render.cat, data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与吸烟及被动吸烟之间的关联') 
+
+table1(~吸烟+吸烟2+被动吸烟 | HBsAg,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与吸烟及被动吸烟之间的关联') 
 ```
 **1.3.2 肿瘤标志物筛查阳性与肥胖之间的关联分析**     
 ```{r echo=FALSE,warning=FALSE}
@@ -508,7 +555,7 @@ table1(~糖尿病+高血压+高血脂+冠心病+中风|CA199,render.categorical=
 table1(~糖尿病+高血压+高血脂+冠心病+中风|CA125,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA199,render.strat=rndr.strat,droplevels = F,caption='CA199与基础性疾病之间的关联')
 table1(~糖尿病+高血压+高血脂+冠心病+中风|CA153,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA153与基础性疾病之间的关联')
 table1(~糖尿病+高血压+高血脂+冠心病+中风|PG,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与基础性疾病之间的关联')
-table1(~糖尿病+高血压+高血脂+冠心病+中风|HBsAg,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与基础性疾病之间的关联')
+  table1(~糖尿病+高血压+高血脂+冠心病+中风|HBsAg,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与基础性疾病之间的关联')
 
 ```
 **1.4、不同肿瘤标志物筛查阳性与癌症特异性危险因素之间的关联分析**  
@@ -537,10 +584,17 @@ table1(~乳腺小叶不典型增生+乳腺导管不典型增生+乳腺小叶原�
 table1(~乳腺小叶不典型增生+乳腺导管不典型增生+乳腺小叶原位癌|CA153,render.categorical=my.render.cat,data=baseline_compare_female,overall=F,render = rndr_baseline_CA153,render.strat=rndr.strat,droplevels = F,caption='CA153与不同疾病史之间的关联')
 table1(~食管或胃上皮内瘤变+十二指肠溃疡+Barrett食管+萎缩性胃炎+
          胃溃疡+胃息肉+幽门螺杆菌感染史+EB病毒感染史+胃粘膜异性增生+胃肠上皮化生+残胃|PG,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_PG,render.strat=rndr.strat,droplevels = F,caption='PG与不同疾病史之间的关联')
-table1(~胆囊息肉+胆结石+脂肪肝+肝硬化+
+  0.0table1(~胆囊息肉+胆结石+脂肪肝+肝硬化+
          慢性乙型肝炎+慢性丙型肝炎+血吸虫病感染史|HBsAg,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_HBsAg,render.strat=rndr.strat,droplevels = F,caption='HBsAg与不同疾病史之间的关联')
 ```
 **1.4.3 肿瘤标志物筛查阳性与特殊职业暴露之间的关联分析**  
+**单因素与多因素分析结果**
+```{r}
+logit(y='CEA',x=c('癌症家族史','肺癌家族史','乳腺癌家族史','肝癌家族史','胃癌家族史','年龄','性别','家庭收入','就业状况','BMI','饮酒','喝茶','酸奶','吸烟','被动吸烟','婚姻','教育','血型',"肺结核",         "慢性支气管炎","肺气肿","哮喘支气管扩张","矽肺或尘肺","胆囊息肉" ,"胆结石","脂肪肝","肝硬化" ,          "慢性乙型肝炎","慢性丙型肝炎","血吸虫病感染史","萎缩性胃炎","胃溃疡","胃息肉","幽门螺杆菌感染史","EB病毒感染史","胃粘膜异性增生","胃肠上皮化生","残胃","糖尿病","高血压","高血脂","冠心病","中风"),data=baseline_compare)
+logit(y='AFP',x=c('癌症家族史','肺癌家族史','乳腺癌家族史','肝癌家族史','胃癌家族史','年龄','性别','家庭收入','就业状况','BMI','饮酒','喝茶','酸奶','吸烟','被动吸烟','婚姻','教育','血型',"肺结核",         "慢性支气管炎","肺气肿","哮喘支气管扩张","矽肺或尘肺","胆囊息肉" ,"胆结石","脂肪肝","肝硬化" ,          "慢性乙型肝炎","慢性丙型肝炎","血吸虫病感染史","萎缩性胃炎","胃溃疡","胃息肉","幽门螺杆菌感染史","EB病毒感染史","胃粘膜异性增生","胃肠上皮化生","残胃","糖尿病","高血压","高血脂","冠心病","中风"),data=baseline_compare)
+logit(y='CA199',x=c('癌症家族史','肺癌家族史','乳腺癌家族史','肝癌家族史','胃癌家族史','年龄','性别','家庭收入','就业状况','BMI','饮酒','喝茶','酸奶','吸烟','被动吸烟','婚姻','教育','血型',"肺结核",         "慢性支气管炎","肺气肿","哮喘支气管扩张","矽肺或尘肺","胆囊息肉" ,"胆结石","脂肪肝","肝硬化" ,          "慢性乙型肝炎","慢性丙型肝炎","血吸虫病感染史","萎缩性胃炎","胃溃疡","胃息肉","幽门螺杆菌感染史","EB病毒感染史","胃粘膜异性增生","胃肠上皮化生","残胃","糖尿病","高血压","高血脂","冠心病","中风"),data=baseline_compare)
+logit(y='HBsAg_pos',x=c('癌症家族史','肺癌家族史','乳腺癌家族史','肝癌家族史','胃癌家族史','年龄','性别','家庭收入','就业状况','BMI','饮酒','喝茶','酸奶','吸烟','被动吸烟','婚姻','教育','血型',"肺结核",         "慢性支气管炎","肺气肿","哮喘支气管扩张","矽肺或尘肺","胆囊息肉" ,"胆结石","脂肪肝","肝硬化" ,          "慢性乙型肝炎","慢性丙型肝炎","血吸虫病感染史","萎缩性胃炎","胃溃疡","胃息肉","幽门螺杆菌感染史","EB病毒感染史","胃粘膜异性增生","胃肠上皮化生","残胃","糖尿病","高血压","高血脂","冠心病","中风"),data=baseline_compare)
+```
 ***
 ```{r warning=FALSE}
 table1(~石棉+镉+镍+砷+氡+氯乙烯+X射线+苯|CEA,render.categorical=my.render.cat,data=baseline_compare,overall=F,render = rndr_baseline_CEA,render.strat=rndr.strat,droplevels = F,caption='CEA与不同职业暴露史之间的关联') 
