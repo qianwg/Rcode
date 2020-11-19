@@ -15,6 +15,12 @@ pepsinogen<-pepsinogen%>%transmute(
   PG_pos3[pg1<=30 & pgr<=2]<-4,
   PG_pos3[is.na(PG_pos3)]<-1,
   PG_pos3=factor(PG_pos3,levels=c(1,2,3,4),labels=c('正常','轻度萎缩','中度萎缩','重度萎缩')),
+  PG_hp<-NA,
+  PG_hp[Hp_pos=="否" & PG_pos=='阴性']<-1,
+  PG_hp[Hp_pos=="是" & PG_pos=='阴性']<-2,
+  PG_hp[Hp_pos=="是" & PG_pos=='阳性']<-3,
+  PG_hp[Hp_pos=="否" & PG_pos=='阳性']<-4,
+  PG_hp=factor(PG_hp,levels=c(1,2,3,4),labels=c('A','B','C','D')),
   PG1=pg1,PG2=pg2,PGR=pgr,
   PG1_range=case_when(
     PG1<20 ~ 1,
@@ -67,6 +73,7 @@ pepsinogen<-pepsinogen%>%transmute(
   ),
   age_risk4=factor(age_risk4,levels=seq(3),labels=c('40-49','50-69',
                                                     '>=70')),
+  age_risk5=factor(ifelse(age>=60,1,0),levels=c(0,1),labels=c('<60','>=60')),
   sex_risk=factor(sex,levels=c(1,2),labels=c('Male','Female')),
   marriage_risk=case_when(
     marriag==1 ~ 1,
@@ -80,8 +87,15 @@ pepsinogen<-pepsinogen%>%transmute(
     educati==4 | educati==5 | educati==6 ~ 3,
   ),
   education_risk=factor(education_risk,levels=c(1,2,3),labels=c('小学及以下','初中','高中及以上')),
+  education_risk2=case_when(
+    educati==1 | educati==2 | educati==3 | educati==4~ 1,
+    educati==5 | educati==6 ~ 2,
+  ),
+  education_risk2=factor(education_risk2,levels=c(1,2),labels=c('≤12年','>12年')),
   income_risk=factor(income,levels = c(1,2,3,4),labels=c('<3000','3000-4999','5000-9999','>10000')),
+  income_risk2=factor(ifelse(income>2,1,0),levels = c(0,1),labels=c('<5000','>=5000')),
   employm_risk=factor(employm,levels=c(1,2,3,4),labels=c('在业','离退休','失业/下岗/待业','家务/无业')),
+  employm_risk2=factor(ifelse(employm>=3,3,employm),levels=c(1,2,3),labels=c('在业','离退休','失业/下岗/待业')),
   blood_risk=factor(bloodtp,levels = c(1,2,3,4,5),labels=c('A','B','O','AB','不详')),
   blood_risk1=case_when(
     bloodtp==3 ~ 1,
@@ -206,18 +220,18 @@ pepsinogen<-pepsinogen%>%transmute(
   #Xray_risk=factor(ifelse(xray==2 & !is.na(xray),1,0)),#X射线
   #benzene_risk=factor(ifelse(benzene==2,1,0)),#苯
   #stress_risk=factor(ifelse(stress==2,1,0),levels=c(0,1),labels = c('否','是')),
-)%>%transmute(ID=ID,PG1,PG2,PGR, PG1_range=PG1_range,PGR_range,PG2_range,Hp_pos,#name=name,
+)%>%transmute(ID=ID,PG1,PG2,PGR, PG1_range=PG1_range,PGR_range,PG2_range,Hp_pos,PG_hp,#name=name,
               n=as.character(1:length(PG1)),AFP,HBsAg_pos,PG_pos3,#CA125,CA153,CA199,CEA,
               PG_pos=PG_pos,PG_pos1,PG_pos2,年龄=age,年龄分组3=age_risk3,AFP_pos,#CA199_pos,CEA_pos,CA125_pos,CA153_pos,
-              年龄分组=age_risk,年龄分组2=age_risk2,性别=sex_risk,婚姻=marriage_risk,就业状况=employm_risk,#胃癌家族史=gastric_sim,
+              年龄分组=age_risk,年龄分组2=age_risk2,年龄分组5=age_risk5,性别=sex_risk,婚姻=marriage_risk,就业状况=employm_risk,#胃癌家族史=gastric_sim,
               教育=education_risk,血型=blood_risk,血型1=blood_risk1,血型2=blood_risk2,包年,包年分组,cpd,smkyrs,年龄分组4=age_risk4,
               运动=factor(exercise_risk),#快走=jog_risk,太极=taichi_risk,
               #广场舞=fitdance_risk,瑜伽=yoga_risk,游泳=swim_risk,跑步=run_risk,球类=ball_risk,器械=apparatus_risk,
               #生活习惯
               #每天早餐=breakfast_risk,准点吃饭=dalayeat_risk,吃饭速度=speedeat_risk,外出吃饭=outeat_risk,
               #静态时间=factor(sedentaryh_risk),手机使用时间=cellphoneh_risk,
-              被动吸烟1=psmk_risk1,被动吸烟2=psmk_risk2,
-              家庭收入=income_risk,BMI=BMI,BMI_group=BMI_risk,BMI_group2=BMI_risk2,饮酒=alcohol_risk,喝茶=tea_risk,鲜奶=milk_risk,
+              被动吸烟1=psmk_risk1,被动吸烟2=psmk_risk2,教育年数=education_risk2,就业状况2=employm_risk2,
+              家庭收入=income_risk,家庭收入2=income_risk2,BMI=BMI,BMI_group=BMI_risk,BMI_group2=BMI_risk2,饮酒=alcohol_risk,喝茶=tea_risk,鲜奶=milk_risk,
               酸奶=yogurt_risk,咖啡=coffee_risk,蔬菜=veget_risk,水果=fruit_risk,谷类= grain_risk,
               鸡蛋=egg_risk,杂粮=cereal_risk,豆类=beans_risk,坚果=nuts_risk,
               大蒜=garlic_risk,菌类=fungus_risk,油炸=fried_risk,#烧烤=barbecued_risk,
@@ -233,7 +247,7 @@ pepsinogen<-pepsinogen%>%transmute(
             #  氯乙烯=chloroethy_risk,X射线=Xray_risk,苯=benzene_risk,
               #重大精神创伤=stress_risk
 )
-#pepsinogen2<-pepsinogen%>%filter(残胃!='是')
+pepsinogen2<-pepsinogen%>%filter(胃肠疾病!='是')
 variables1<-c('家庭收入','教育','婚姻','就业状况','血型')
 variables4<-c("饮酒","喝茶",'鲜奶',"酸奶",'咖啡',"蔬菜","水果","谷类","鸡蛋","杂粮","豆类",'坚果','菌类')
 variables5<-c("运动",'跑步',"静态时间","手机使用时间")

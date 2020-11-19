@@ -1,10 +1,8 @@
 risk_function<-function(data){
-  names(data)<-tolower(names(data))
-  data$cpd<-ifelse(data$cpd==99,0,data$cpd)
-  data$smkyrs<-ifelse(data$smkyrs==99,0,data$smkyrs)
-  data$baonian<-ifelse(data$smoking==2,(data$cpd*data$smkyrs)/20,
-                       ifelse(data$smoking==3,(data$cpd*data$smkyrs)/20,0))
-  data$bmi<-data$weight/((data$height/100)^2)
+  variables<-c('stime','etime','upload_time','survey_name','Name1','Sfz1','Sfz2','Sfz3','Name2','NAME','ID18','A2','A3','BBtime','Surveyor'),
+  data[,-which(names(data) %in% variables)]<-as.data.frame(
+    apply(data[,-which(names(data) %in% variables)],2,as.numeric))
+  data$BMI=10000*data$A15/(data$A14*data$A14)
   attach(data)
   #------------------------------------------------------共同因素-----------------------------------------------------
   #家族史函数
@@ -427,5 +425,3 @@ risk_function2<-function(data){
   return(total)
   
 }
-
-

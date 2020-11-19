@@ -43,6 +43,8 @@ names(table2)<-c('percent','1%','2.5%','5%','10%','25%','50%','75%','90%','95%',
 ggtable<-ggtexttable(table2,rows=NULL,theme = ttheme('mBlue'))
 ggarrange(plot1,ggtable,nrow=2,widths=c(1,20),heights=c(1,0.25))
 rm(list=ls())
+cancer_score<-screening2[,c("lung_score",'breast_score','liver_score','gastric_score')]
+export(cancer_score,'~/癌症得分2019.xlsx')
 #
 table<-data.frame(t(apply(screening2[which(screening2$sex==1),c("lung_score",'breast_score','liver_score','gastric_score')],2,percent_value)))
 table2<-cbind(c('lung_score','breast_score',
@@ -109,6 +111,41 @@ table2<-cbind(c('lung_score','breast_score',
                 'liver_score','gastric_score'),table)
 names(table2)<-c('percent','1%','2.5%','5%','10%','25%','50%','75%','90%','95%','97%','97.5','98%','99%')
 ggtable<-ggtexttable(table2,rows=NULL,theme = ttheme('mBlue'))
+
+
+#####2020-7-13
+
+screening<-read.xlsx('~/data/screening2020-7-13.xlsx',detectDates = TRUE)
+
+screening2<-risk_function(screening)
+cancer_score<-screening2[,c("lung_score",'breast_score','liver_score','gastric_score')]
+plot1<-facet(ggbarplot(data=subset(cancer_score,!is.na(score)),x='score',xlab='',y='n'),
+             facet.by = 'cancer',scales='free')+theme(
+               axis.text.x = element_text(
+                 color = "black",
+                 size = 6,
+                 vjust = 0.5,
+                 hjust = 0.5
+               ),plot.title=element_text(hjust=0.5)
+             )
+plot1
+table<-data.frame(t(apply(screening2[,c("lung_score",'breast_score','liver_score','gastric_score')],2,percent_value)))
+table2<-cbind(c('lung_score','breast_score',
+                'liver_score','gastric_score'),table)
+names(table2)<-c('percent','1%','2.5%','5%','10%','25%','50%','75%','90%','95%','97%','97.5','98%','99%')
+ggtable<-ggtexttable(table2,rows=NULL,theme = ttheme('mBlue'))
+ggarrange(plot1,ggtable,nrow=2,widths=c(1,20),heights=c(1,0.25))
+
+
+##
+
+
+
+
+
+
+
+
 
 
 

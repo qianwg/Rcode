@@ -57,7 +57,7 @@ risk_function<-function(data){
   #每周至少3次喝酒（1分）
   #每周至少3次喝茶、鲜奶、酸奶或其他富含益生菌饮品、咖啡（-1分/个）
   #每周至少1次喝碳酸饮料、果汁/果味饮料、茶味饮料（1分/个）
-  #每天都吃新鲜蔬菜、新鲜水果、谷类、蛋类（-1分/个）
+  #每天都吃新鲜蔬菜、新鲜水果、（-1分/个）
   #每周至少3次新鲜水产品、薯类、杂粮、豆类、坚果、大蒜、菌类（-1分/个）
   #每周至少1次油炸、烧烤、熏制、腌制、酱制、晒制食品（1分/个）
   food_risk1<-ifelse(is.na(alcohol),0,ifelse(alcohol==2,1,0))
@@ -70,10 +70,10 @@ risk_function<-function(data){
   food_risk8<-ifelse(is.na(teadr),0,ifelse(teadr==2,1,0))
   food_risk9<-ifelse(is.na(veget),0,ifelse(veget==2,-1,0))
   food_risk10<-ifelse(is.na(fruit),0,ifelse(fruit==2,-1,0))
-  food_risk11<-ifelse(is.na(grain),0,ifelse(grain==2,-1,0))
-  food_risk12<-ifelse(is.na(egg),0,ifelse(egg==2,-1,0))
+  #food_risk11<-ifelse(is.na(grain),0,ifelse(grain==2,-1,0))
+  #food_risk12<-ifelse(is.na(egg),0,ifelse(egg==2,-1,0))
   food_risk13<-ifelse(is.na(seafd),0,ifelse(seafd==2,-1,0))
-  food_risk14<-ifelse(is.na(potato),0,ifelse(potato==2,-1,0))
+  #food_risk14<-ifelse(is.na(potato),0,ifelse(potato==2,-1,0))
   food_risk15<-ifelse(is.na(cereal),0,ifelse(cereal==2,-1,0))
   food_risk16<-ifelse(is.na(beans),0,ifelse(beans==2,-1,0))
   food_risk17<-ifelse(is.na(nuts),0,ifelse(nuts==2,-1,0))
@@ -86,7 +86,7 @@ risk_function<-function(data){
   food_risk24<-ifelse(is.na(sauced),0,ifelse(sauced==2,1,0))
   food_risk25<-ifelse(is.na(dried),0,ifelse(dried==2,1,0))
   food_risk<-food_risk1+food_risk2+food_risk3+food_risk4+food_risk5+food_risk6+food_risk7+food_risk8+food_risk9+food_risk10+
-    food_risk11+food_risk12+food_risk13+food_risk14+food_risk15+food_risk16+food_risk17+food_risk18+food_risk19+
+    food_risk13+food_risk15+food_risk16+food_risk17+food_risk18+food_risk19+
     food_risk20+food_risk21+food_risk22+food_risk23+food_risk24+food_risk25
   #(6)身体活动相关因素
   #每周至少3次，且每次至少30分钟的快走、太极拳、广场舞、瑜伽、游泳、跑步、球类、器械、或其他锻炼方式（-1分/个）
@@ -109,8 +109,13 @@ risk_function<-function(data){
     body_risk10+body_risk11#+body_risk12
   #(7)重度精神问题并接受治疗≥3个月（1分）
   stress_risk<-ifelse(is.na(stress),0,ifelse(stress==2,1,0))
+  #(8)空气污染
+  cooking_risk=ifelse(cookingfum>=3,1,0)#室内油烟较多或很多
+  hometraffi_risk=ifelse(hometraffi==2,1,0)#家庭住所临街
+  worktraffi_risk=ifelse(worktraffi==2,1,0)#工作场所临街
+  air_risk=cooking_risk+hometraffi_risk+worktraffi_risk
   #共同因素得分之和
-  common_risk<-age_risk+smoking_risk+passivesmk_risk+bmi_risk+food_risk+body_risk+stress_risk
+  common_risk<-age_risk+smoking_risk+passivesmk_risk+bmi_risk+food_risk+body_risk+stress_risk+air_risk
 #----------------------------------------------------------肺癌----------------------------------------------------------
   #肺癌
   lung_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==34,3,0),0)
@@ -237,7 +242,7 @@ risk_function<-function(data){
   #5.肝癌总分
   liver_score<-liver_family+liver_disea_risk+common_risk
   ##4.胃癌
-  #1.家族史（有身份证5分，无身份证3分，上限15分）
+  #1.家族史（3分，上限10分）
   gastric_fath<-ifelse(!is.na(catpfath),ifelse(catpfath==16,3,0),0)
   gastric_moth<-ifelse(!is.na(catpmoth),ifelse(catpmoth==16,3,0),0)
   gastric_brot1<-ifelse(!is.na(catpbrot1),ifelse(catpbrot1==16,3,0),0)

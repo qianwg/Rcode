@@ -1,0 +1,41 @@
+library(rio)
+library(tidyverse)
+library(table1)
+library(ggpubr)
+library(DT)
+library(forestmodel)
+library(patchwork)
+library(rms)
+library(ggstatsplot)
+library(htmlTable)
+library(nnet)
+library(effects)
+library(VGAM)
+source('~/Rcode/screening/gastric_screening2020/baseline2020--2020-8-31.R')
+source('~/Rcode/statistics/Table1.R')
+source('~/Rcode/statistics/OR.R')
+my.render.cat <- function(x) {
+  c("", sapply(stats.default(x), function(y) with(y,
+                                                  sprintf("%d (%0.2f %%)", FREQ, PCT))))
+}
+#整体分布
+table1(~自身癌+癌症家族史+胃癌家族史+性别+年龄分组+年龄分组2+年龄分组3+年龄分组4+婚姻+就业状况+       
+         就业状况2+家庭收入+家庭收入2+教育+教育年数+      
+         血型+血型1+血型2+运动+快走+  
+         太极+广场舞+瑜伽+游泳+跑步+ 
+         球类+器械+BMI_group+BMI_group2+包年分组+吸烟1+ 
+         吸烟2+被动吸烟1+被动吸烟2+每天早餐+准点吃饭+       
+         吃饭速度+外出吃饭+静态时间+手机使用时间+饮酒+   
+         喝茶+鲜奶+酸奶+咖啡+碳酸饮料+     
+         果味饮料+茶味饮料+蔬菜+水果+谷类+ 
+         鸡蛋+杂粮+豆类+肉类+坚果+ 
+         水产品+薯类+大蒜+菌类+油炸+   
+         烧烤+熏制+酱制+偏咸+腌制+  
+         晒制+偏辣+偏烫+偏酸+偏甜+  
+         偏硬+啤酒+低度白酒+高度白酒+葡萄酒+         
+         十二指肠溃疡+胃食管反流性疾病+胃溃疡+胃息肉+ 
+         幽门螺杆菌感染史+萎缩性胃炎+胃肠上皮化生+胃粘膜异性增生+残胃+  
+         消化性溃疡+胃肠疾病+糖尿病+高血压+高血脂+
+         冠心病+中风+偏头疼+镉+石棉+  
+         镍+砷+氡+氯乙烯+X射线+
+         苯+重度精神问题,data=pepsinogen,render.categorical=my.render.cat)

@@ -9,12 +9,63 @@ library(patchwork)
 ##2020-7-06
 #数据读取
 source('~/Rcode/screening/gastric_screening2019/stomach_data.R')
-source('~/Rcode/statistics/OR.R')
+source('~/Rcode/statistics/OR.R')#
+#基本分布
+
+#不同cut-off值的阳性率
+pos<-pepsinogen%>%transmute(PG_pos1=factor(ifelse(PG1<=70 & PGR<=3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos2=factor(ifelse(PG1<=50 & PGR<=2,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos3=factor(ifelse(PG1<49,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos4=factor(ifelse(PGR<1.3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos5=factor(ifelse(PGR<1.6,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos6=factor(ifelse(PGR<2.5,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos7=factor(ifelse(PGR<2.9,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos8=factor(ifelse(PGR<=3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos9=factor(ifelse(PG1<20,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos10=factor(ifelse(PG1<17,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos11=factor(ifelse(PG1<25,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos12=factor(ifelse(PG1<30,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos13=factor(ifelse(PG1<17 & PGR<1.6,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos14=factor(ifelse(PG1<20 & PGR<2.9,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos15=factor(ifelse(PG1<50 & PGR<2,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       PG_pos16=factor(ifelse(PG1<70 & PGR<2,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+                       年龄分组=case_when(
+                         between(年龄,40,49)~1,
+                         between(年龄,50,59)~2,
+                         between(年龄,60,69)~3,
+                         年龄>=70~4
+                       ),年龄分组=factor(年龄分组,levels=c(1,2,3,4),labels=c('40-49','50-59','60-69','>=70'))
+                       性别
+                       )
+
+summary(pos)
+#不同cut-off标准的阳性率与年龄
+
+
+
+
+
+
+
 #性别和年龄
-table1(~性别+年龄分组 | PG_pos,data=pepsinogen,render.categorical=my.render.cat)
-chisq(x=c('性别','年龄分组'),y='PG_pos',data=pepsinogen)
+table1(~性别+年龄分组+年龄分组2 | PG_pos,data=pepsinogen,render.categorical=my.render.cat)
+chisq(x=c('性别','年龄分组','年龄分组2'),y='PG_pos',data=pepsinogen)
 logit(x='性别',y='PG_pos',data=pepsinogen)
-logit(x='年龄分组',y='PG_pos',data=pepsinogen)
+logit(x='年龄分组2',y='PG_pos',data=pepsinogen)
+logit(x=c('年龄分组','性别','吸烟1','饮酒','BMI_group','油炸',"咖啡",'就业状况','糖尿病','高血压','高血脂','冠心病','幽门螺杆菌感染史','消化性溃疡'),y='PG_pos',data=pepsinogen)
+
+#年龄与萎缩率的限制性立方样条
+dd <- datadist(pepsinogen) 
+options(datadist='dd')
+fit<- lrm(PG_pos ~ rcs(年龄,4) + 性别,data=pepsinogen) 
+#dd$limits$age[2] <- 50 ###这里是设置参考点，也就是HR为1的点，常见的为中位数或者临床有意义的点 
+fit=update(fit)
+RR<-Predict(fit, 年龄,fun=exp,ref.zero = TRUE) ####预测HR值
+ggplot()+geom_line(data=RR, aes(年龄,yhat),linetype="solid",size=1,alpha = 0.7,colour="red")+
+  geom_ribbon(data=RR, aes(年龄,ymin = lower, ymax = upper),alpha = 0.1,fill="red")+
+theme_classic()+geom_hline(yintercept=1, linetype=2,size=1)+ 
+  labs(title = "RCS", x="age", y="RR (95%CI)") 
+anova(fit)
 #性别分层年龄
 table1(~年龄分组 | PG_pos,data=subset(pepsinogen,性别=='Female'),render.categorical=my.render.cat)
 chisq.test(with(subset(pepsinogen,性别=='Female'),table(PG_pos,年龄分组)))
@@ -262,7 +313,16 @@ logit(x=c('性别','年龄分组','BMI_group'),y='PG_pos',data=pepsinogen)
 summary(glm(PG_pos~性别+年龄+relevel(BMI_group2,ref='正常'),data=pepsinogen,family='binomial'))
 ##多因素矫正
 logit(x=c('性别','年龄分组','就业状况','饮酒','糖尿病','吸烟1','咖啡','油炸','偏酸','BMI_group'),y='PG_pos',data=pepsinogen)
-
+#限制性立方样条
+fit<- lrm(PG_pos ~ rcs(BMI,4) + 性别+年龄分组,data=pepsinogen) 
+#dd$limits$age[2] <- 50 ###这里是设置参考点，也就是HR为1的点，常见的为中位数或者临床有意义的点 
+fit=update(fit)
+RR<-Predict(fit, BMI,fun=exp,ref.zero = TRUE) ####预测HR值
+ggplot()+geom_line(data=RR, aes(BMI,yhat),linetype="solid",size=1,alpha = 0.7,colour="red")+
+  geom_ribbon(data=RR, aes(BMI,ymin = lower, ymax = upper),alpha = 0.1,fill="red")+
+  theme_classic()+geom_hline(yintercept=1, linetype=2,size=1)+ 
+  labs(title = "RCS", x="BMI", y="RR (95%CI)") 
+anova(fit)
 
 
 
@@ -378,17 +438,67 @@ pepsinogen%>%group_by(PG_pos4)%>%summarise(n=n(),mean=mean(BMI),sd=sd(BMI))
 kruskal.test(BMI~PG_pos4,data=pepsinogen)
 table1(~BMI_group+BMI_group2 | PG_pos4,data=pepsinogen,render.categorical=my.render.cat)
 chisq(x=c('BMI_group','BMI_group2'),y='PG_pos4',data=pepsinogen)
+
+fit<- lrm(PG_pos ~ rcs(BMI,4),data=pepsinogen) 
+#dd$limits$age[2] <- 50 ###这里是设置参考点，也就是HR为1的点，常见的为中位数或者临床有意义的点 
+#fit=update(fit)
+RR<-Predict(fit, BMI,fun=exp,ref.zero = TRUE) ####预测HR值
+ggplot()+geom_line(data=RR, aes(BMI,yhat),linetype="solid",size=1,alpha = 0.7,colour="red")+
+  geom_ribbon(data=RR, aes(BMI,ymin = lower, ymax = upper),alpha = 0.1,fill="red")+
+  theme_classic()+geom_hline(yintercept=1, linetype=2,size=1)+ 
+  labs(title = "RCS", x="BMI", y="RR (95%CI)") 
+anova(fit)
+
+
 ####疾病史
 table1(~糖尿病+高血压+高血脂+冠心病+幽门螺杆菌感染史+消化性溃疡+Barrett食管+萎缩性胃炎+食管或胃上皮内瘤变+
          胃息肉+胃肠上皮化生+残胃| PG_pos4,data=pepsinogen,render.categorical=my.render.cat)
 chisq(x=c('糖尿病','高血压','高血脂','冠心病','幽门螺杆菌感染史','消化性溃疡'),y='PG_pos4',data=pepsinogen)
 
-
-
-
-
-
-
+###女性生理与生育相关因素(初潮年龄+绝经+哺乳月份+流产+人工流产+)
+table1(~初潮年龄分组+初潮年龄+绝经年龄+绝经+哺乳+哺乳月份+流产+人工流产+哺乳时间分组+首次生育年龄分组+初次生育年龄 | PG_pos,data=pepsinogen,render.categorical=my.render.cat)
+ chisq(x=variables10,y='PG_pos',data=pepsinogen)
+ fit<- lrm(PG_pos ~ rcs(初潮年龄,4) + 年龄分组,data=subset(pepsinogen,性别=="Female")) 
+ #dd$limits$age[2] <- 50 ###这里是设置参考点，也就是HR为1的点，常见的为中位数或者临床有意义的点 
+ #fit=update(fit)
+ RR<-Predict(fit, 初潮年龄,fun=exp,ref.zero = TRUE) ####预测HR值
+ ggplot()+geom_line(data=RR, aes(初潮年龄,yhat),linetype="solid",size=1,alpha = 0.7,colour="red")+
+   geom_ribbon(data=RR, aes(初潮年龄,ymin = lower, ymax = upper),alpha = 0.1,fill="red")+
+   theme_classic()+geom_hline(yintercept=1, linetype=2,size=1)+ 
+   labs(title = "RCS", x="age", y="RR (95%CI)") 
+ anova(fit)
+#
+ fit<- lrm(PG_pos ~ rcs(哺乳月份,4) + 年龄分组,data=subset(pepsinogen,性别=="Female")) 
+ #dd$limits$age[2] <- 50 ###这里是设置参考点，也就是HR为1的点，常见的为中位数或者临床有意义的点 
+ #fit=update(fit)
+ RR<-Predict(fit, 哺乳月份,fun=exp,ref.zero = TRUE) ####预测HR值
+ ggplot()+geom_line(data=RR, aes(哺乳月份,yhat),linetype="solid",size=1,alpha = 0.7,colour="red")+
+   geom_ribbon(data=RR, aes(哺乳月份,ymin = lower, ymax = upper),alpha = 0.1,fill="red")+
+   theme_classic()+geom_hline(yintercept=1, linetype=2,size=1)+ 
+   labs(title = "RCS", x="age", y="RR (95%CI)") 
+ anova(fit)
+#
+ fit<- lrm(PG_pos ~ rcs(哺乳月份,4) + 年龄分组,data=subset(pepsinogen,性别=="Female")) 
+ #dd$limits$age[2] <- 50 ###这里是设置参考点，也就是HR为1的点，常见的为中位数或者临床有意义的点 
+ #fit=update(fit)
+ RR<-Predict(fit, 哺乳月份,fun=exp,ref.zero = TRUE) ####预测HR值
+ ggplot()+geom_line(data=RR, aes(哺乳月份,yhat),linetype="solid",size=1,alpha = 0.7,colour="red")+
+   geom_ribbon(data=RR, aes(哺乳月份,ymin = lower, ymax = upper),alpha = 0.1,fill="red")+
+   theme_classic()+geom_hline(yintercept=1, linetype=2,size=1)+ 
+   labs(title = "RCS", x="age", y="RR (95%CI)") 
+ anova(fit)
+#首次生育年龄
+ fit<- lrm(PG_pos ~ rcs(初次生育年龄,4) + 年龄分组,data=subset(pepsinogen,性别=="Female")) 
+ #dd$limits$age[2] <- 50 ###这里是设置参考点，也就是HR为1的点，常见的为中位数或者临床有意义的点 
+ #fit=update(fit)
+ RR<-Predict(fit, 初次生育年龄,fun=exp,ref.zero = TRUE) ####预测HR值
+ ggplot()+geom_line(data=RR, aes(初次生育年龄,yhat),linetype="solid",size=1,alpha = 0.7,colour="red")+
+   geom_ribbon(data=RR, aes(初次生育年龄,ymin = lower, ymax = upper),alpha = 0.1,fill="red")+
+   theme_classic()+geom_hline(yintercept=1, linetype=2,size=1)+ 
+   labs(title = "RCS", x="age", y="RR (95%CI)") 
+ anova(fit)
+#
+forest_model(glm(PG_pos~雌激素影响时间+哺乳+首次生育年龄分组+雌激素代替治疗+口服避孕药,data=subset(pepsinogen,性别=="Female" & 绝经=="是"),family = 'binomial'))
 
 
 ##胃萎缩与胃癌前病变/胃癌的关系
@@ -405,6 +515,33 @@ gastric2%>%filter(!is.na(type))%>%transmute(type=factor(type,levels=c('胃癌','
 
 
 
+###与肿瘤标志物
+#PG2
+fit<- lrm(PG_pos ~ rcs(PG2,4) +年龄分组+ 性别+饮酒+吸烟1,data=pepsinogen) 
+#dd$limits$age[2] <- 50 ###这里是设置参考点，也就是HR为1的点，常见的为中位数或者临床有意义的点 
+#fit=update(fit)
+RR<-Predict(fit, PG2,fun=exp,ref.zero = TRUE) ####预测HR值
+ggplot()+geom_line(data=RR, aes(PG2,yhat),linetype="solid",size=1,alpha = 0.7,colour="red")+
+  geom_ribbon(data=RR, aes(PG2,ymin = lower, ymax = upper),alpha = 0.1,fill="red")+
+  theme_classic()+geom_hline(yintercept=1, linetype=2,size=1)+ 
+  labs(title = "RCS", x="PG2", y="RR (95%CI)") 
+anova(fit)
+##
+logit(x='PG2_range',y='PG_pos',data=pepsinogen)
+
+
+
+##CA125
+fit<- lrm(PG_pos ~ rcs(CA125,4) +年龄分组,data=pepsinogen) 
+summary(lrm(PG_pos ~ CA125_pos +年龄分组,data=pepsinogen))
+#dd$limits$age[2] <- 50 ###这里是设置参考点，也就是HR为1的点，常见的为中位数或者临床有意义的点 
+#fit=update(fit)
+RR<-Predict(fit,CA125,fun=exp,ref.zero = TRUE) ####预测HR值
+ggplot()+geom_line(data=RR, aes(CA125,yhat),linetype="solid",size=1,alpha = 0.7,colour="red")+
+  geom_ribbon(data=RR, aes(CA125,ymin = lower, ymax = upper),alpha = 0.1,fill="red")+
+  theme_classic()+geom_hline(yintercept=1, linetype=2,size=1)+ 
+  labs(title = "RCS", x="AFP", y="RR (95%CI)") 
+anova(fit)
 
 
 
