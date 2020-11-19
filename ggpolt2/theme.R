@@ -19,3 +19,9 @@ panel.spacing.y=unit(0.05, "lines")
 axis.line = element_line(color='black')
 #
 legend.key=element_rect(color='white')
+#X、Y轴网格线
+panel.grid.major.x = element_line(color='grey')
+panel.grid.major.y = element_blank()
+#分面标题
+strip.text=element_text(face='blod',color='red')
+#
