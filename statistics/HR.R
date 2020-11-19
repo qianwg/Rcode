@@ -1,9 +1,12 @@
 library(survival)
 cox<-function(y,x,data){
   #单因素 
+  
   result1<-data.frame()
   for(i in x){
     formula_uni<-as.formula(paste(y,'~', i))
+    #data<-phen_survival_T
+    #formula_uni<-as.formula(paste('Surv(OS.time,OS)','~', 'rs1192658'))
     modelit_uni<-coxph(formula_uni,data)
     tableit_uni<-data.frame(summary(modelit_uni)$coef)
     tableit_uni$HR<-tableit_uni$exp.coef.
@@ -19,12 +22,12 @@ cox<-function(y,x,data){
   formula<- as.formula(paste(y,'~', paste(x, collapse= "+")))
   modelit<-coxph(formula,data)
   tableit<-data.frame(summary(modelit)$coef)
-  tableit$HR<-exp(tableit$exp.coef.)
+  tableit$HR<-(tableit$exp.coef.)
   tableit$LCL <- exp(tableit$coef - tableit$se.coef. * 1.96 )
   tableit$UCL <- exp(tableit$coef + tableit$se.coef. * 1.96 )
   tableit$`p-value(adjusted)` <- round(tableit$Pr...z..,4)
   tableit$`aHR(95%CI)`<-paste0(round(tableit$HR,2),'(',round(tableit$LCL,2),'-',round(tableit$UCL,2),')')
-  result2 <- tableit[-1,c(10,9)]
+  result2 <- tableit[,c(10,9)]
   result2<-cbind(variable=row.names(result2), result2)
   row.names(result2)=NULL
   #合并
