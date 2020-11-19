@@ -1,4 +1,5 @@
 library(gtable)
+library(grid)
 ggplot2.two_y_axis <- function(g1, g2) {
   g1 <- ggplotGrob(g1)
   g2 <- ggplotGrob(g2)
