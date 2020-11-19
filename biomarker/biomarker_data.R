@@ -81,7 +81,7 @@ pepsinogen<-biomarker%>%filter(!is.na(PGI))%>%transmute(
   cellphoneh_risk=case_when(
     cellphoneh==1 ~ 1,
     cellphoneh==2 ~ 2,
-    cellphoneh==3 | cellphoneh==3 ~ 3,
+    cellphoneh==3 | cellphoneh==4 ~ 3,
   ),
   cellphoneh_risk=factor(cellphoneh_risk,levels=c(1,2,3),labels=c('少于3小时','3-6小时','7小时及以上')),
   #基础性疾病
