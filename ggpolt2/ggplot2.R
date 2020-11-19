@@ -12,6 +12,9 @@ ggplot(data=m,aes(x=a))+geom_histogram(aes(y=..density..),fill='lightblue',bins=
 #2
 ggplot(data=m,aes(x=a))+geom_histogram(aes(y=..density..),fill='lightblue',bins=40,color='black')+
   stat_function(fun=dnorm,args=list(mean=mean(m$a),sd=sd(m$a)),color='red',geom='point')+theme_classic()
+#3
+stat_overlay_normal_density(color = "red", linetype = "dashed")
+
 ##stat_function更多是用来在原有图像的基础上画线
 #--------------------------------------------base theme---------------------------------------------------
 mtcars2 <- within(mtcars, {
@@ -38,3 +41,15 @@ p1 + theme_minimal()
 p1 + theme_classic()
 p1 + theme_void()
 #--------------------------------------------------------------------------------------------
+#散点图+边际直方图
+library(ggExtra)
+p<-gggplot(aes(x=,y=))+geom_point()
+ggMarginal(p,type='histogram')
+
+
+
+
+
+
+
+
