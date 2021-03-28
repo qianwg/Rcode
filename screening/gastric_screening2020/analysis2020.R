@@ -11,9 +11,24 @@ library(htmlTable)
 library(nnet)
 library(effects)
 library(VGAM)
-source('~/Rcode/screening/gastric_screening2020/data2020.R')
+source('~/Rcode/screening/questionnaire/questionnaire2020.R')
 source('~/Rcode/statistics/Table1.R')
 source('~/Rcode/statistics/OR.R')
+variables<-c("胃癌家族史","性别","年龄分组","年龄分组3","年龄分组4","年龄分组5","婚姻",         
+             "就业状况2","家庭收入2","教育年数"  ,        
+             "血型1","运动","BMI_group","BMI_group2",
+             "吸烟1","吸烟2","被动吸烟1","被动吸烟2","每天早餐","准点吃饭","吃饭速度",          
+             "外出吃饭","静态时间","手机使用时间","睡眠时间","睡眠质量"  ,        
+             "夜班","饮酒","喝茶","鲜奶","酸奶",              
+             "咖啡","碳酸饮料","果味饮料","茶味饮料","蔬菜",              
+             "水果","谷类","鸡蛋","杂粮","豆类" ,             
+             "肉类","坚果","水产品","薯类","大蒜",
+             "菌类","油炸","烧烤","熏制","酱制",              
+             "偏咸","腌制","晒制","偏辣","偏烫" ,             
+             "偏酸","偏甜","啤酒","低度白酒","高度白酒","十二指肠溃疡",      
+             "胃食管反流性疾病","胃溃疡","胃息肉","幽门螺杆菌感染史","萎缩性胃炎","消化性溃疡","胃肠疾病",
+             "糖尿病","高血压","高血脂","冠心病","中风" ,             
+             "偏头疼")
 my.render.cat <- function(x) {
   c("", sapply(stats.default(x), function(y) with(y,
                                                   sprintf("%d (%0.2f %%)", FREQ, PCT))))
@@ -33,29 +48,52 @@ mytheme<-theme(plot.title=element_text(hjust=0.5),
                #strip.text.x =element_text(face='blod',color='red')
 )
 ##
-##
-table1(~PG_pos+PG_hp+Hp_pos+自身癌+癌症家族史+胃癌家族史+性别+年龄分组+年龄分组2+年龄分组3+年龄分组4+婚姻+就业状况+       
-         就业状况2+家庭收入+家庭收入2+教育+教育年数+      
-         血型+血型1+血型2+运动+快走+  
-         太极+广场舞+瑜伽+游泳+跑步+ 
-         球类+器械+BMI_group+BMI_group2+包年分组+吸烟1+ 
-         吸烟2+被动吸烟1+被动吸烟2+每天早餐+准点吃饭+       
-         吃饭速度+外出吃饭+静态时间+手机使用时间+饮酒+   
-         喝茶+鲜奶+酸奶+咖啡+碳酸饮料+     
-         果味饮料+茶味饮料+蔬菜+水果+谷类+ 
-         鸡蛋+杂粮+豆类+肉类+坚果+ 
-         水产品+薯类+大蒜+菌类+油炸+   
-         烧烤+熏制+酱制+偏咸+腌制+  
-         晒制+偏辣+偏烫+偏酸+偏甜+  
-         偏硬+啤酒+低度白酒+高度白酒+葡萄酒+         
-         十二指肠溃疡+胃食管反流性疾病+胃溃疡+胃息肉+ 
-         幽门螺杆菌感染史+萎缩性胃炎+胃肠上皮化生+胃粘膜异性增生+残胃+  
-         消化性溃疡+胃肠疾病+糖尿病+高血压+高血脂+
-         冠心病+中风+偏头疼+镉+石棉+  
-         镍+砷+氡+氯乙烯+X射线+
-         苯+重度精神问题,data=pepsinogen2020,render.categorical=my.render.cat)
+screening2020<-screening2020%>%filter(自身癌!="是" & 残胃!="是")
+match1<-inner_join(screening2020,data_Hp2020,by='persoID')
+match2<-inner_join(match1,data_PG2020,by='ID')
+#########基本分布
+##年龄
+##年龄分布1
+pg1.age<-match2%>%filter(年龄>=40,年龄<=74)%>%group_by(年龄)%>%
+  summarise(median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75),median.pg2=median(PG2),Q1.pg2=quantile(PG2,0.25),Q3.pg2=quantile(PG2,0.75))%>%
+  ggplot(aes(x=年龄))+geom_ribbon(aes(ymin=Q1,ymax=Q3), fill="#6699CC", alpha=.4)+mytheme+
+  geom_line(aes(y=median,color="PGI"),size=1)+
+  geom_ribbon(aes(ymin=Q1.pg2,ymax=Q3.pg2),fill="#FFCC00",alpha=0.4)+
+  geom_line(aes(y=median.pg2,colour="PGII"),size=1)+
+  labs(x = "Age",y='Median(Q1-Q3)',colour='PG')+scale_x_continuous(breaks=seq(42,74,5))+
+  scale_y_log10()+scale_color_manual(values=c("PGI"="#003366","PGII"="#FFCC00"))
+pg2.age<-match2%>%filter(年龄>=40,年龄<=74,!is.na(PGR))%>%group_by(年龄)%>%
+  summarise(median=median(PGR),Q1=quantile(PGR,0.25),Q3=quantile(PGR,0.75))%>%
+  ggplot()+geom_ribbon(aes(x=年龄,ymin=Q1,ymax=Q3), fill="#FF9933", alpha=.6)+
+  mytheme+geom_line(aes(x=年龄,y=median,colour='PGR'),size=1)+
+  labs(x = "Age",y='',colour='')+scale_x_continuous(breaks=seq(42,74,5))+scale_color_manual(values=c('PGR'='#FF9933'))
+(pg1.age | pg2.age) + plot_layout(guides='collect') & theme(legend.position = 'top')
+##性别分布
+PG1.sex<-match2%>%group_by(性别)%>%summarise(median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))%>%
+  ggplot()+geom_bar(aes(x=性别,y=median,fill=性别),stat='identity',color='black',width = 0.5,size=0.8)+
+  geom_errorbar(aes(x=性别,ymin=median,ymax=Q3),width=0.1,size=0.8)+mytheme+labs(fill='Sex',y='PGI',x='')+
+  geom_line(aes(x=as.numeric(性别),y=c(92,92)),size=0.8)+geom_line(aes(x=c(1,1),y=c(86,87)),size=0.8)+geom_line(aes(x=c(2,2),y=c(86,87)),size=0.8)+
+  annotate('text',label="***",x=1.5,y=93,size=10,color='black')
 
-make.table(dat= pepsinogen2020,
+PG2.sex<-match2%>%group_by(性别)%>%summarise(median=median(PG2),Q1=quantile(PG2,0.25),Q3=quantile(PG2,0.75))%>%
+  ggplot()+geom_bar(aes(x=性别,y=median,fill=性别),stat='identity',color='black',width = 0.5,size=0.8)+
+  geom_errorbar(aes(x=性别,ymin=median,ymax=Q3),width=0.1,size=0.8)+mytheme+labs(fill='Sex',y='PGII',x=' ')+
+  geom_line(aes(x=as.numeric(性别),y=c(18,18)),size=0.8)+geom_line(aes(x=c(1,1),y=c(15.7,16)),size=0.8)+geom_line(aes(x=c(2,2),y=c(15.7,16)),size=0.8)+
+  annotate('text',label="***",x=1.5,y=19,size=10,color='black')
+
+wilcox.test(PGR~性别,data=match2)
+PGR.sex<-match2%>%group_by(性别)%>%summarise(median=median(PGR),Q1=quantile(PGR,0.25),Q3=quantile(PGR,0.75))%>%
+  ggplot()+geom_bar(aes(x=性别,y=median,fill=性别),stat='identity',color='black',width = 0.5,size=0.8)+
+  geom_errorbar(aes(x=性别,ymin=median,ymax=Q3),width=0.1,size=0.8)+mytheme+labs(fill='Sex',y='PGI/II ratio',x=' ')+
+  geom_line(aes(x=as.numeric(性别),y=c(8.2,8.2)),size=0.8)+geom_line(aes(x=c(1,1),y=c(8.1,8.2)),size=0.8)+geom_line(aes(x=c(2,2),y=c(8.1,8.2)),size=0.8)+
+  annotate('text',label="***",x=1.5,y=8.3,size=10,color='black')
+
+(PG1.sex | PG2.sex | PGR.sex) +plot_layout(guides='collect') & theme(legend.position = 'top')
+###幽门螺旋杆菌分布
+
+
+###
+make.table(dat= match2,
            strat        = "PG_pos",
            cat.varlist  = variables,
            cat.rmstat   = list(c("col")),

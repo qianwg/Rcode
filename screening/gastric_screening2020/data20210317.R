@@ -1,13 +1,13 @@
-library(openxlsx)
-pepsinogen2020<-read.xlsx('~/data/2020/data2020_20210322/示范区20210318.xlsx',detectDates=TRUE)
+#20210317：2020年筛查数据整理
+biomark<-import('~/data/2020/analysis20210317/biomarker.xlsx')
+Hp<-import('~/data/2020/analysis20210317/Hp20210317.xlsx')
+questionnaire2020<-import('~/data/2020/analysis20210317/示范区.xlsx')
 variables<-c('stime','etime','upload_time','survey_name','Name1','Sfz1','Sfz2','Sfz3','Name2','NAME','ID18','A2','A3','BBtime','Surveyor')
-pepsinogen2020[,-which(names(pepsinogen2020) %in% variables)]<-as.data.frame(
-  apply(pepsinogen2020[,-which(names(pepsinogen2020) %in% variables)],2,as.numeric))
-source('~/Rcode/screening/gastric_screening2020/risk_score2020.R')
-pepsinogen2020<-risk_function2(pepsinogen2020)
-pepsinogen2020<-pepsinogen2020%>%transmute(
+questionnaire2020[,-which(names(questionnaire2020) %in% variables)]<-as.data.frame(
+  apply(questionnaire2020[,-which(names(questionnaire2020) %in% variables)],2,as.numeric))
+questionnaire2020<-questionnaire2020%>%transmute(
   #个人信息
-  ID=ID20,name=NAME,persoID=ID18,F_ID,smoking_risk,passivesmk_risk,bmi_risk,food_risk,body_risk,stress_risk,common_risk,
+  ID=ID20,name=NAME,persoID=ID18,F_ID,
   #自身癌症史
   cancer_self=factor(ifelse(B2a_1==1 & !is.na(B2a_1),1,0),levels=c(0,1),labels=c('否','是')),
   #癌症家族史
@@ -87,8 +87,6 @@ pepsinogen2020<-pepsinogen2020%>%transmute(
   #吸烟与被动吸烟
   smk_risk1=factor(B4,levels=c(1,2,3),labels=c('从不吸烟','目前吸烟','过去吸烟')),
   smk_risk2=factor(ifelse(B4>=2,1,0),levels=c(0,1),labels=c('从不吸烟','目前或过去吸烟')),
-  smk_risk4=factor(ifelse(B4==2,1,0),levels=c(0,1),labels=c('从不吸烟/过去吸烟','目前吸烟')),
-  
   psmk_risk2=case_when(
     B5==1 ~ 0,
     B5==2 & B5_X<10 ~ 1,
@@ -210,7 +208,7 @@ pepsinogen2020<-pepsinogen2020%>%transmute(
     alcohol_risk=="是" & B6a_3==1 ~ 4, #经常和高度白酒
     alcohol_risk=="是" & B6a_4==1 ~ 5, #经常和葡萄酒白酒
     alcohol_risk=="是" & B6a_5==1 ~ 6 #经常喝米白酒
-    ),
+  ),
   drink=factor(drink,levels=c(1,2,3,4,5,6),labels=c('Occasional','beer','low alcoholic liquor','strong liquor','wine','rice wine')),
   drink1=factor(ifelse(B6a_1==1 & !is.na(B6a_1),1,0),levels=c(0,1),labels=c('否','是')),#啤酒
   drink1_dose=B6a_1_X,#每天几毫升
@@ -330,109 +328,107 @@ pepsinogen2020<-pepsinogen2020%>%transmute(
   ),
   妇科手术史=factor(妇科手术史,levels=c(1,2,3),labels=c('无子宫摘除或卵巢摘除','有子宫摘除无卵巢摘除','有卵巢摘除')),
   ###危险因素之和
-  common_risk2=factor(ifelse(common_risk>0,2,1),levels=c(1,2),labels=c('<=0分','>0分')),
-  胃癌问卷阳性=factor(ifelse(B46==2,1,0),levels=c(0,1),labels=c('阴性','阳性'))
-  
+ 
   
 )%>%transmute(
-              #匹配信息
-              ID=ID,F_ID,name,persoID,
-              #癌症家族史相关
-              自身癌=cancer_self,癌症家族史=cancer_fam,胃癌家族史=gastric_sim,
-              #性别和年龄
-              性别=sex_risk,年龄=age,年龄分组=age_risk,年龄分组2=age_risk2,年龄分组3=age_risk3,年龄分组4=age_risk4,年龄分组5=age_risk5,
-              #人口学特征
-              婚姻=marriage_risk,就业状况=employm_risk, 就业状况2=employm_risk2,家庭收入=income_risk,家庭收入2=income_risk2,
-              教育=education_risk,教育年数=education_risk2,血型=blood_risk,血型1=blood_risk1,血型2=blood_risk2,
-              #运动
-              运动=factor(exercise_risk),快走=jog_risk,太极=taichi_risk,
-              广场舞=fitdance_risk,瑜伽=yoga_risk,游泳=swim_risk,跑步=run_risk,球类=ball_risk,器械=apparatus_risk,
-              #BMI
-              BMI=BMI,BMI_group=BMI_risk,BMI_group2=BMI_risk2,BMI_group3=BMI_risk3,BMI_group4=BMI_risk4,
-              #吸烟相关
-              包年,包年分组,cpd,smkyrs,吸烟年数分组,吸烟年数分组2,
-              吸烟1=smk_risk1,吸烟2=smk_risk2,吸烟3=smk_risk3,吸烟4=smk_risk4,
-              被动吸烟1=psmk_risk1,被动吸烟2=psmk_risk2,
-              #生活习惯
-              每天早餐=breakfast_risk,准点吃饭=dalayeat_risk,吃饭速度=speedeat_risk,外出吃饭=outeat_risk,
-              静态时间=factor(sedentaryh_risk),手机使用时间=cellphoneh_risk,
-              睡眠时间=sleephrs_risk,睡眠质量=sleepquali_risk,夜班=nightshift_risk,
-              #饮食相关
-              饮酒=alcohol_risk,喝茶=tea_risk,鲜奶=milk_risk,
-              酸奶=yogurt_risk,咖啡=coffee_risk,碳酸饮料=sodas_risk,果味饮料=juice_risk,茶味饮料=teadr_risk,
-              蔬菜=veget_risk,水果=fruit_risk,谷类= grain_risk,
-              鸡蛋=egg_risk,杂粮=cereal_risk,豆类=beans_risk,肉类=meat_risk,坚果=nuts_risk,
-              水产品=seafd_risk,薯类=potato_risk,大蒜=garlic_risk,菌类=fungus_risk,油炸=fried_risk,烧烤=barbecued_risk,
-              熏制=smked_risk,酱制=sauced_risk,偏咸=salty_risk,腌制=salted_risk,晒制=dried_risk,
-              偏辣=spicy_risk,偏烫=hot_risk,偏酸=sour_risk,偏甜=sweet_risk,偏硬=hard_risk, 
-              #饮酒相关
-              饮酒2=drink,
-              啤酒=drink1,啤酒量=drink1_dose,啤酒年数=drink1_years,
-              低度白酒=drink2,低度白酒量=drink2_dose,低度白酒年数=drink2_years,
-              高度白酒=drink3,高度白酒量=drink3_dose,高度白酒年数=drink3_years,
-              葡萄酒=drink4,葡萄酒量=drink4_dose,葡萄酒年数=drink4_years,
-              米酒=drink5,米酒酒量=drink5_dose,米酒年数=drink5_years,
-              #食管、胃、十二指肠疾病史
-              十二指肠溃疡=disea15_risk,胃食管反流性疾病=disea16_risk,
-              胃溃疡=disea18_risk,胃息肉=disea19_risk,幽门螺杆菌感染史=disea20_risk,
-              萎缩性胃炎=disea17_risk,胃肠上皮化生=disea23_risk,胃粘膜异性增生=disea22_risk,残胃=disea24_risk,
-              消化性溃疡=factor(ifelse(十二指肠溃疡=='是' | 胃溃疡=='是',1,0),levels=c(0,1),labels=c('否','是')),
-              胃肠疾病=stomach_disea,
-              #慢性病史
-              糖尿病=disea28_risk,高血压=disea29_risk,高血脂=disea30_risk,冠心病=disea31_risk, 中风=disea32_risk,偏头疼=disea33_risk,
-              #职业暴露
-              镉=cadmium_risk,石棉=asbestos_risk,镍=nickel_risk,砷=arsenic_risk,氡=radon_risk,
-                氯乙烯=chloroethy_risk,X射线=Xray_risk,苯=benzene_risk,
-              重度精神问题=stress_risk,
-              #生理生育因素
-              初潮年龄,绝经年龄,绝经,生育,生育次数,绝经分类,
-              初次生育年龄,哺乳,哺乳月份,流产,人工流产次数,
-              自然流产次数,人工流产,自然流产,绝育手术,子宫摘除术,卵巢摘除术,
-              
-              初潮年龄分组=case_when(
-                初潮年龄<13 ~ 1 ,
-                between(初潮年龄,13,14) ~ 2,
-                between(初潮年龄,15,16) ~ 3,
-                初潮年龄>=17 ~ 4
-              ),
-              初潮年龄分组=factor(初潮年龄分组,levels = c(1,2,3,4),labels = c('<13岁','13-14岁','15-16',">=17")),
-              生育次数分组=factor(ifelse(生育次数>2,1,0),levels = c(0,1),labels=c('<=2次','>2次')),
-              
-              首次生育年龄分组=case_when(
-                初次生育年龄<=20 ~ 1,
-                between(初次生育年龄,21,25) ~ 2,
-                between(初次生育年龄,26,30) ~ 3,
-                初次生育年龄>30 ~ 4
-                
-              ),
-              首次生育年龄分组=factor(首次生育年龄分组,levels = c(1,2,3,4),labels = c('<=20','21-25','26-30','>=31')) ,
-              哺乳时间分组=case_when(
-                哺乳==1 ~ 1,
-                哺乳月份<=12 ~ 2,         
-                哺乳月份>12 ~ 3
-              ),
-              哺乳时间分组=factor(哺乳时间分组,levels = c(1,2,3),labels = c('未哺乳','<=12','>12')),
-              绝经年龄分组=case_when(
-                绝经年龄<45 ~ 1,
-                between(绝经年龄,45,49) ~ 2,
-                between(绝经年龄,50,54) ~ 3,
-                绝经年龄>54 ~ 4
-              ),
-              绝经年龄分组=factor(绝经年龄分组,levels=c(1,2,3,4),labels=c('<45','45-49','50-54','>54')),
-              口服避孕药,
-              雌激素代替治疗,
-              雌激素影响时间=绝经年龄-初潮年龄,
-              雌激素影响时间分组=case_when(
-                雌激素影响时间<33 ~ 1,
-                雌激素影响时间>=33 & 雌激素影响时间<36 ~ 2,
-                雌激素影响时间>=36 & 雌激素影响时间<39 ~ 3,
-                雌激素影响时间>=39  ~ 4
-              ),
-              雌激素影响时间分组=factor(雌激素影响时间分组,levels=c(1,2,3,4),labels=c('<33','33-35.9','36-38.9','>=39')),
-              妇科手术史,smoking_risk,passivesmk_risk,bmi_risk,food_risk,body_risk,stress_risk,common_risk,common_risk2,胃癌问卷阳性
-)%>%filter(自身癌!='是',残胃!='是')
+  #匹配信息
+  ID=ID,F_ID,name,persoID,
+  #癌症家族史相关
+  自身癌=cancer_self,癌症家族史=cancer_fam,胃癌家族史=gastric_sim,
+  #性别和年龄
+  性别=sex_risk,年龄=age,年龄分组=age_risk,年龄分组2=age_risk2,年龄分组3=age_risk3,年龄分组4=age_risk4,年龄分组5=age_risk5,
+  #人口学特征
+  婚姻=marriage_risk,就业状况=employm_risk, 就业状况2=employm_risk2,家庭收入=income_risk,家庭收入2=income_risk2,
+  教育=education_risk,教育年数=education_risk2,血型=blood_risk,血型1=blood_risk1,血型2=blood_risk2,
+  #运动
+  运动=factor(exercise_risk),快走=jog_risk,太极=taichi_risk,
+  广场舞=fitdance_risk,瑜伽=yoga_risk,游泳=swim_risk,跑步=run_risk,球类=ball_risk,器械=apparatus_risk,
+  #BMI
+  BMI=BMI,BMI_group=BMI_risk,BMI_group2=BMI_risk2,BMI_group3=BMI_risk3,BMI_group4=BMI_risk4,
+  #吸烟相关
+  包年,包年分组,cpd,smkyrs,吸烟年数分组,吸烟年数分组2,
+  吸烟1=smk_risk1,吸烟2=smk_risk2,吸烟3=smk_risk3,
+  被动吸烟1=psmk_risk1,被动吸烟2=psmk_risk2,
+  #生活习惯
+  每天早餐=breakfast_risk,准点吃饭=dalayeat_risk,吃饭速度=speedeat_risk,外出吃饭=outeat_risk,
+  静态时间=factor(sedentaryh_risk),手机使用时间=cellphoneh_risk,
+  睡眠时间=sleephrs_risk,睡眠质量=sleepquali_risk,夜班=nightshift_risk,
+  #饮食相关
+  饮酒=alcohol_risk,喝茶=tea_risk,鲜奶=milk_risk,
+  酸奶=yogurt_risk,咖啡=coffee_risk,碳酸饮料=sodas_risk,果味饮料=juice_risk,茶味饮料=teadr_risk,
+  蔬菜=veget_risk,水果=fruit_risk,谷类= grain_risk,
+  鸡蛋=egg_risk,杂粮=cereal_risk,豆类=beans_risk,肉类=meat_risk,坚果=nuts_risk,
+  水产品=seafd_risk,薯类=potato_risk,大蒜=garlic_risk,菌类=fungus_risk,油炸=fried_risk,烧烤=barbecued_risk,
+  熏制=smked_risk,酱制=sauced_risk,偏咸=salty_risk,腌制=salted_risk,晒制=dried_risk,
+  偏辣=spicy_risk,偏烫=hot_risk,偏酸=sour_risk,偏甜=sweet_risk,偏硬=hard_risk, 
+  #饮酒相关
+  饮酒2=drink,
+  啤酒=drink1,啤酒量=drink1_dose,啤酒年数=drink1_years,
+  低度白酒=drink2,低度白酒量=drink2_dose,低度白酒年数=drink2_years,
+  高度白酒=drink3,高度白酒量=drink3_dose,高度白酒年数=drink3_years,
+  葡萄酒=drink4,葡萄酒量=drink4_dose,葡萄酒年数=drink4_years,
+  米酒=drink5,米酒酒量=drink5_dose,米酒年数=drink5_years,
+  #食管、胃、十二指肠疾病史
+  十二指肠溃疡=disea15_risk,胃食管反流性疾病=disea16_risk,
+  胃溃疡=disea18_risk,胃息肉=disea19_risk,幽门螺杆菌感染史=disea20_risk,
+  萎缩性胃炎=disea17_risk,胃肠上皮化生=disea23_risk,胃粘膜异性增生=disea22_risk,残胃=disea24_risk,
+  消化性溃疡=factor(ifelse(十二指肠溃疡=='是' | 胃溃疡=='是',1,0),levels=c(0,1),labels=c('否','是')),
+  胃肠疾病=stomach_disea,
+  #慢性病史
+  糖尿病=disea28_risk,高血压=disea29_risk,高血脂=disea30_risk,冠心病=disea31_risk, 中风=disea32_risk,偏头疼=disea33_risk,
+  #职业暴露
+  镉=cadmium_risk,石棉=asbestos_risk,镍=nickel_risk,砷=arsenic_risk,氡=radon_risk,
+  氯乙烯=chloroethy_risk,X射线=Xray_risk,苯=benzene_risk,
+  重度精神问题=stress_risk,
+  #生理生育因素
+  初潮年龄,绝经年龄,绝经,生育,生育次数,绝经分类,
+  初次生育年龄,哺乳,哺乳月份,流产,人工流产次数,
+  自然流产次数,人工流产,自然流产,绝育手术,子宫摘除术,卵巢摘除术,
+  
+  初潮年龄分组=case_when(
+    初潮年龄<13 ~ 1 ,
+    between(初潮年龄,13,14) ~ 2,
+    between(初潮年龄,15,16) ~ 3,
+    初潮年龄>=17 ~ 4
+  ),
+  初潮年龄分组=factor(初潮年龄分组,levels = c(1,2,3,4),labels = c('<13岁','13-14岁','15-16',">=17")),
+  生育次数分组=factor(ifelse(生育次数>2,1,0),levels = c(0,1),labels=c('<=2次','>2次')),
+  
+  首次生育年龄分组=case_when(
+    初次生育年龄<=20 ~ 1,
+    between(初次生育年龄,21,25) ~ 2,
+    between(初次生育年龄,26,30) ~ 3,
+    初次生育年龄>30 ~ 4
+    
+  ),
+  首次生育年龄分组=factor(首次生育年龄分组,levels = c(1,2,3,4),labels = c('<=20','21-25','26-30','>=31')) ,
+  哺乳时间分组=case_when(
+    哺乳==1 ~ 1,
+    哺乳月份<=12 ~ 2,         
+    哺乳月份>12 ~ 3
+  ),
+  哺乳时间分组=factor(哺乳时间分组,levels = c(1,2,3),labels = c('未哺乳','<=12','>12')),
+  绝经年龄分组=case_when(
+    绝经年龄<45 ~ 1,
+    between(绝经年龄,45,49) ~ 2,
+    between(绝经年龄,50,54) ~ 3,
+    绝经年龄>54 ~ 4
+  ),
+  绝经年龄分组=factor(绝经年龄分组,levels=c(1,2,3,4),labels=c('<45','45-49','50-54','>54')),
+  口服避孕药,
+  雌激素代替治疗,
+  雌激素影响时间=绝经年龄-初潮年龄,
+  雌激素影响时间分组=case_when(
+    雌激素影响时间<33 ~ 1,
+    雌激素影响时间>=33 & 雌激素影响时间<36 ~ 2,
+    雌激素影响时间>=36 & 雌激素影响时间<39 ~ 3,
+    雌激素影响时间>=39  ~ 4
+  ),
+  雌激素影响时间分组=factor(雌激素影响时间分组,levels=c(1,2,3,4),labels=c('<33','33-35.9','36-38.9','>=39')),
+  妇科手术史
+)#%>%filter(自身癌!='是',残胃!='是',幽门螺杆菌感染史!="是")
 
-data_PG2020<-read.xlsx('~/data/2020/data2020_20210322/biomarker.xlsx',detectDates=TRUE)%>%transmute(
+biomark<-biomark%>%transmute(
   ID=筛查编号,name_PG=姓名,sex_PG=性别,age_PG=年龄,PG1=as.numeric(PGI),
   PG2=as.numeric(PGII),PGR=as.numeric(`PGI/PGII`),AFP=AFP,hbsag,
   PG1_range=case_when(
@@ -500,8 +496,8 @@ data_PG2020<-read.xlsx('~/data/2020/data2020_20210322/biomarker.xlsx',detectDate
   PG2_range5=factor(PG2_range5,levels = c(1,2,3,4,5),labels=c('<=7.5','7.6-12.5','12.6-17.5','17.5-24.5','>24.5')),
   
   PGR_range=case_when(
-    PGR<=3 ~ 1,
-    between(PGR,3.01,7) ~ 2,
+    PGR<3 ~ 1,
+    between(PGR,3,7) ~ 2,
     PGR>7 ~ 3
   ),
   PGR_range=factor(PGR_range,levels=c(1,2,3),labels=c('<3','3-7','>7')),
@@ -550,17 +546,16 @@ data_PG2020<-read.xlsx('~/data/2020/data2020_20210322/biomarker.xlsx',detectDate
   ),
   PG_pos13=factor(PG_pos13,levels=c(1,2,3,4,5,6),labels=c('PGa','PGb','PGc','PGd','PGe','PGf'))
   
-  )%>%transmute(
+)%>%transmute(
   ID=as.numeric(ID),name_PG,sex_PG,age_PG,PG1,PG2,PGR,AFP,hbsag,
   PG1_range,PG1_range1,PG1_range2,PG1_range3,PG1_range4,
   PG2_range,PG2_range2,PG2_range3,PG2_range4,PG2_range5,
   PGR_range,PGR_range2,PG_pos12,PG_pos13,
   PG_pos,PG_pos1,PG_pos2,PG_pos3,PG_pos4,PG_pos5,PG_pos6,PG_pos7,PG_pos8,PG_pos9,PG_pos10,PG_pos11
 )
-data_Hp2020<-read.xlsx('~/data/2020/data2020_20210322/Hp20210318.xlsx',detectDates=TRUE)
 
-data_Hp2020<-data_Hp2020%>%transmute(
-  name_Hp=NAME,persoID=ID18,C14Value=as.numeric(C14Value),Hp_pos=factor(Result,levels=c(1,2),labels=c('阴性','阳性')),
+Hp<-Hp%>%transmute(
+ name_Hp=NAME,persoID=ID18,C14Value=as.numeric(C14Value),Hp_pos=factor(Result,levels=c(1,2),labels=c('阴性','阳性')),
   Hp_pos2=factor(ifelse(C14Value>=100,2,1),levels=c(1,2),labels=c('阴性','阳性')),
   Hp_pos3=factor(ifelse(C14Value>=149,2,1),levels=c(1,2),labels=c('阴性','阳性')),
   Hp_pos4=case_when(
@@ -587,27 +582,7 @@ data_Hp2020<-data_Hp2020%>%transmute(
   Hp_pos6=factor(Hp_pos6,levels=c(1,2,3,4),labels=c('<99','149-499','500-1499','>=1500')),
   
 )
-screening2020<-inner_join(pepsinogen2020,data_PG2020,by='ID')
-screening2020<-inner_join(screening2020,data_Hp2020,by='persoID')
-screening2020$PG_hp<-NA
-screening2020$PG_hp[screening2020$Hp_pos2=="阴性" & screening2020$PG_pos=='阴性']<-1
-screening2020$PG_hp[screening2020$Hp_pos2=="阳性" & screening2020$PG_pos=='阴性']<-2
-screening2020$PG_hp[screening2020$Hp_pos2=="阳性" & screening2020$PG_pos=='阳性']<-3
-screening2020$PG_hp[screening2020$Hp_pos2=="阴性" & screening2020$PG_pos=='阳性']<-4
-screening2020$PG_hp<-factor(screening2020$PG_hp,levels=c(1,2,3,4),labels=c('A','B','C','D'))
-rm(data_Hp2020)
-rm(data_PG2020)
-rm(pepsinogen2020)
-
-
-
-
-
-
-
-
-
-
-
+screening2020<-inner_join(questionnaire2020,biomark,by='ID')
+screening2020<-inner_join(screening2020,Hp,by='persoID')
 
 

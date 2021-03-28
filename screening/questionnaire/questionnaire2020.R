@@ -1,13 +1,14 @@
 rm(list=ls())
 library(tidyverse)
+library(openxlsx)
 library(rio)
-screening2020<-import('~/data/questionnaire/示范区--2020-11-16.xlsx')
+screening2020<-read.xlsx('~/data/示范区--2020-12-01.xlsx',sheet=1)
 variables<-c('stime','etime','upload_time','survey_name','Name1','Sfz1','Sfz2','Sfz3','Name2','NAME','ID18','A2','A3','BBtime','Surveyor')
 screening2020[,-which(names(screening2020) %in% variables)]<-as.data.frame(
   apply(screening2020[,-which(names(screening2020) %in% variables)],2,as.numeric))
 screening2020<-screening2020%>%transmute(
   #个人信息
-  ID=ID20,name=NAME,persoID=ID18,F_ID,初筛编号=A0a,初筛姓名=Name1,初筛身份证号=Sfz1,SurDate,
+  ID=ID20,name=NAME,persoID=ID18,F_ID,初筛编号=A0a,初筛姓名=Name1,初筛身份证号=Sfz1,
   #自身癌症史
   cancer_self=factor(ifelse(B2a_1==1 & !is.na(B2a_1),1,0),levels=c(0,1),labels=c('否','是')),
   #癌症家族史
@@ -160,7 +161,7 @@ screening2020<-screening2020%>%transmute(
     BMI>=28 ~ 4#肥胖
   ),
   BMI_risk3=factor(BMI_risk3,levels = c(1,2,3,4),labels=c('正常','偏瘦',"超重",'肥胖')),
-  
+  BMI_risk4=factor(ifelse(BMI>=24,2,1),levels=c(1,2),labels=c('正常','超重/肥胖')),
   #BMI_risk=factor(ifelse(10000*weight/(height*height)<24,0,ifelse(10000*weight/(height*height)<28,1,2))),
   #饮食
   alcohol_risk=factor(B6_1,levels=c(0,1),labels=c('否','是')),
@@ -209,10 +210,10 @@ screening2020<-screening2020%>%transmute(
   drink1_dose=B6a_1_X,#每天几毫升
   drink1_years=B6b1,#啤酒饮酒年限
   drink2=factor(ifelse(B6a_2==1 & !is.na(B6a_2),1,0),levels=c(0,1),labels=c('否','是')),#低度白酒
-  drink2_dose=B6a_2_X,#每天几两
+  drink2_dose=ifelse(is.na(B6a_2_X),0,B6a_2_X),#每天几两
   drink2_years=B6b2,#低度白酒饮酒年限
   drink3=factor(ifelse(B6a_3==1 & !is.na(B6a_3),1,0),levels=c(0,1),labels=c('否','是')),#高度白酒
-  drink3_dose=B6a_3_X,#每天几两
+  drink3_dose=ifelse(is.na(B6a_3_X),0,B6a_3_X),#每天几两
   drink3_years=B6b3,#高度白酒饮酒年限
   drink4=factor(ifelse(B6a_4==1 & !is.na(B6a_4),1,0),levels=c(0,1),labels=c('否','是')),#葡萄酒、黄酒
   drink4_dose=B6a_4_X,#每天毫升
@@ -325,7 +326,7 @@ screening2020<-screening2020%>%transmute(
   
 )%>%transmute(
   #匹配信息
-  ID=ID,F_ID,name,persoID,初筛编号,初筛姓名,初筛身份证号,SurDate,
+  ID=ID,F_ID,name,persoID,初筛编号,初筛姓名,初筛身份证号,
   #癌症家族史相关
   自身癌=cancer_self,癌症家族史=cancer_fam,胃癌家族史=gastric_sim,
   #性别和年龄
@@ -337,7 +338,7 @@ screening2020<-screening2020%>%transmute(
   运动=factor(exercise_risk),快走=jog_risk,太极=taichi_risk,
   广场舞=fitdance_risk,瑜伽=yoga_risk,游泳=swim_risk,跑步=run_risk,球类=ball_risk,器械=apparatus_risk,
   #BMI
-  BMI=BMI,BMI_group=BMI_risk,BMI_group2=BMI_risk2,BMI_group3=BMI_risk3,
+  BMI=BMI,BMI_group=BMI_risk,BMI_group2=BMI_risk2,BMI_group3=BMI_risk3,BMI_group4=BMI_risk4,
   #吸烟相关
   包年,包年分组,cpd,smkyrs,吸烟年数分组,吸烟年数分组2,
   吸烟1=smk_risk1,吸烟2=smk_risk2,吸烟3=smk_risk3,
@@ -357,10 +358,12 @@ screening2020<-screening2020%>%transmute(
   #饮酒相关
   饮酒2=drink,
   啤酒=drink1,啤酒量=drink1_dose,啤酒年数=drink1_years,
-  低度白酒=drink2,低度白酒量=drink2_dose,低度白酒年数=drink2_years,
+ 低度白酒=drink2,低度白酒量=drink2_dose,低度白酒年数=drink2_years,
   高度白酒=drink3,高度白酒量=drink3_dose,高度白酒年数=drink3_years,
-  葡萄酒=drink4,葡萄酒量=drink4_dose,葡萄酒年数=drink4_years,
-  米酒=drink5,米酒酒量=drink5_dose,米酒年数=drink5_years,
+ 白酒=factor(ifelse(低度白酒=="是" | 高度白酒=="是",2,1),levels=c(1,2),labels=c('否','是')),
+ 白酒量=低度白酒量+高度白酒量,
+ 葡萄酒=drink4,葡萄酒量=drink4_dose,葡萄酒年数=drink4_years,
+ # 米酒=drink5,米酒酒量=drink5_dose,米酒年数=drink5_years,
   #食管、胃、十二指肠疾病史
   十二指肠溃疡=disea15_risk,胃食管反流性疾病=disea16_risk,
   胃溃疡=disea18_risk,胃息肉=disea19_risk,幽门螺杆菌感染史=disea20_risk,
@@ -421,7 +424,7 @@ screening2020<-screening2020%>%transmute(
   妇科手术史
 )#%>%filter(自身癌!='是',残胃!='是')
 
-data_PG2020<-import('~/data/data_PG2020.xlsx')
+data_PG2020<-read.xlsx('~/data/示范区--2020-12-01.xlsx',sheet=3)
 data_PG2020<-data_PG2020%>%transmute(
   ID=筛查编号,name_PG=姓名,sex_PG=性别,age_PG=年龄,PG1=as.numeric(PGI),
   PG2=as.numeric(PGII),PGR=as.numeric(`PGI/PGII`),AFP=AFP,hbsag,
@@ -448,19 +451,25 @@ data_PG2020<-data_PG2020%>%transmute(
   ),
   PG1_range2=factor(PG1_range2,levels=c(1,2,3,4),labels=c('<43.4','43.4-56.9','57.0-76.5','>=76.5')),
   PG1_range3=case_when(
-    PG1<30 ~ 1,
-    PG1>=30 & PG1<=50.0 ~ 2,
+    PG1<=30 ~ 1,
+    PG1>30 & PG1<=50.0 ~ 2,
     PG1>50.0 & PG1<=70.0 ~ 3,
-    PG1>=70 ~ 4
+    PG1>70 ~ 4
   ),
-  PG1_range3=factor(PG1_range3,levels=c(1,2,3,4),labels=c('<30','30-49.9','50-69.9','>=70')),
+  PG1_range3=factor(PG1_range3,levels=c(1,2,3,4),labels=c('<=30','30.01-50','50.01-70','>70')),
   PG1_range4=case_when(
     PG1<20 ~ 1,
     PG1>=20 & PG1<=50.0 ~ 2,
     PG1>50.0 & PG1<=70.0 ~ 3,
-    PG1>=70 ~ 4
+    PG1>70 ~ 4
   ),
-  PG1_range4=factor(PG1_range4,levels=c(1,2,3,4),labels=c('<20','20-49.9','50-69.9','>=70')),
+  PG1_range4=factor(PG1_range4,levels=c(1,2,3,4),labels=c('<20','20-49.9','50-69.9','>70')),
+  PG1_range5=case_when(
+    PG1<30 ~ 1,
+    PG1>=30.0 & PG1<=70.0 ~ 2,
+    PG1>70 ~ 3
+  ),
+  PG1_range5=factor(PG1_range5,levels=c(1,2,3),labels=c('<30','30-70','>70')),
   
   PG2_range=case_when(
     PG2<6.51 ~ 1,
@@ -470,8 +479,7 @@ data_PG2020<-data_PG2020%>%transmute(
   ),
   PG2_range=factor(PG2_range,levels = c(1,2,3,4),labels=c('<6.5','6.51-9.79','9.8-15.29','>=15.30')),
   PG2_range2=case_when(
-    PG2<6 ~ 1,
-    PG2>=6 & PG2<8.4 ~ 2,
+    PG2<8.4 ~ 2,
     PG2>=8.4 & PG2<11.7 ~ 3,
     PG2>=11.7 & PG2<16.8 ~ 4,
     PG2>=16.8 ~ 5
@@ -480,6 +488,14 @@ data_PG2020<-data_PG2020%>%transmute(
   
   PG2_range3=factor(ifelse(PG2<=12,0,1),levels=c(0,1),labels=c('<=12','>12')),
   PG2_range4=factor(ifelse(PG2<=15,0,1),levels=c(0,1),labels=c('<=12','>12')),
+  PG2_range5=case_when(
+    PG2<=6.89 ~ 1,
+    PG2>6.89 & PG2<=10.32 ~ 2,
+    PG2>10.32 & PG2<=16.66 ~ 3,
+    PG2>16.66 ~ 4
+  ),
+  PG2_range5=factor(PG2_range5,levels = c(1,2,3,4),labels=c('<=6.89','6.90-10.32','10.33-16.66','>16.66')),
+  
   
   PGR_range=case_when(
     PGR<3 ~ 1,
@@ -493,7 +509,9 @@ data_PG2020<-data_PG2020%>%transmute(
     PGR>=6 & PGR<9  ~ 3,
     PGR>=9   ~ 4
   ),
-  PGR_range2=factor(PGR_range2,levels=c(1,2,3),labels=c('<3','3-7','>7')),
+  PGR_range2=factor(PGR_range2,levels=c(1,2,3,4),labels=c('<=3','3.01-5.99','6-8.99','>=9')),
+  
+  
   PG_pos=factor(ifelse(PG1<=70 & PGR<=3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
   PG_pos1=factor(ifelse(PG1<=50 & PGR<=3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
   PG_pos2=factor(ifelse(PG1<=30 & PGR<=2,1,0),levels=c(0,1),labels=c('阴性','阳性')),
@@ -534,15 +552,38 @@ data_PG2020<-data_PG2020%>%transmute(
   
 )%>%transmute(
   ID=as.numeric(ID),name_PG,sex_PG,age_PG,PG1,PG2,PGR,AFP,hbsag,
-  PG1_range,PG1_range1,PG1_range2,PG1_range3,PG1_range4,
-  PG2_range,PG2_range2,PG2_range3,PG2_range4,
+  PG1_range,PG1_range1,PG1_range2,PG1_range3,PG1_range4,PG1_range5,
+  PG2_range,PG2_range2,PG2_range3,PG2_range4,PG2_range5,
   PGR_range,PGR_range2,PG_pos12,PG_pos13,
   PG_pos,PG_pos1,PG_pos2,PG_pos3,PG_pos4,PG_pos5,PG_pos6,PG_pos7,PG_pos8,PG_pos9,PG_pos10,PG_pos11
 )
-data_Hp2020<-import('~/data/Hp2020-11-16.xlsx')
-
+data_Hp2020<-read.xlsx('~/data/示范区--2020-12-01.xlsx',sheet=2)
 data_Hp2020<-data_Hp2020%>%transmute(
-  F_ID_Hp=F_ID,survey_name,初筛编号=ID20,街道=JieDao,检测日期=JCDate,name_Hp=NAME,persoID=ID18,C14Value=as.numeric(C14Value),Hp_pos=factor(Result,levels=c(1,2),labels=c('阴性','阳性'))
+  F_ID_Hp=F_ID,初筛编号,街道,检测日期=C14上传日期,name_Hp=初筛姓名,persoID=身份证号,C14Value=as.numeric(C14Value),Hp_pos=factor(Result,levels=c(1,2),labels=c('阴性','阳性')),
+  Hp_pos2=factor(ifelse(C14Value>=100,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+  Hp_pos3=factor(ifelse(C14Value>=149,2,1),levels=c(1,2),labels=c('阴性','阳性')),
+  Hp_pos4=case_when(
+    C14Value<=99 ~ 1,
+    C14Value>=100 & C14Value<149 ~ 2,
+    C14Value>=149 & C14Value<500 ~ 3,
+    C14Value>=500 & C14Value<1500 ~ 4,
+    C14Value>=1500 ~ 5
+  ),
+  Hp_pos4=factor(Hp_pos4,levels=c(1,2,3,4,5),labels=c('阴性','不确定','阳性+','阳性++','阳性+++')),
+  Hp_pos5=case_when(
+    C14Value<149 ~ 1,
+    C14Value>=149 & C14Value<500 ~ 2,
+    C14Value>=500 & C14Value<1500 ~ 3,
+    C14Value>=1500 ~ 4
+  ),
+  Hp_pos5=factor(Hp_pos5,levels=c(1,2,3,4),labels=c('<149','149-499','500-1499','>=1500')),
+  Hp_pos6=case_when(
+    C14Value<=99 ~ 1,
+    C14Value>=149 & C14Value<500 ~ 2,
+    C14Value>=500 & C14Value<1500 ~ 3,
+    C14Value>=1500 ~ 4
+  ),
+  Hp_pos6=factor(Hp_pos6,levels=c(1,2,3,4),labels=c('<99','149-499','500-1499','>=1500')),
 )
 
 

@@ -119,6 +119,7 @@ pepsinogen2019<-pepsinogen2019%>%transmute(
   包年分组=factor(包年分组,levels=c(1,2,3,4,5,6),labels=c('<10','-20','-30','-40','-50','>50')),
   smk_risk1=factor(B4,levels=c(1,2,3),labels=c('从不吸烟','目前吸烟','过去吸烟')),
   smk_risk2=factor(ifelse(B4>=2,1,0),levels=c(0,1),labels=c('从不吸烟','目前或过去吸烟')),
+  smk_risk4=factor(ifelse(B4==2,1,0),levels=c(0,1),labels=c('从不吸烟/过去吸烟','目前吸烟')),
   smk_risk3=case_when(
     B4==1 ~ 1,
     B4==2 & 包年<20 ~2,
@@ -157,6 +158,11 @@ pepsinogen2019<-pepsinogen2019%>%transmute(
     BMI>=28 ~ 4#肥胖
   ),
   BMI_risk3=factor(BMI_risk3,levels = c(1,2,3,4),labels=c('正常','偏瘦',"超重",'肥胖')),
+  BMI_risk4=case_when(
+    BMI<24  ~ 1,#正常
+    BMI>=24 ~ 2,#超重或肥胖
+  ),
+  BMI_risk4=factor(BMI_risk4,levels = c(1,2),labels=c('正常','超重/肥胖')),
   
   #BMI_risk=factor(ifelse(10000*weight/(height*height)<24,0,ifelse(10000*weight/(height*height)<28,1,2))),
   #饮食
@@ -255,8 +261,8 @@ pepsinogen2019<-pepsinogen2019%>%transmute(
   disea31_risk=factor(ifelse(B3_31==1 & !is.na(B3_31),1,0),levels=c(0,1),labels=c('否','是')),#冠心病
   disea32_risk=factor(ifelse(B3_32==1 & !is.na(B3_32),1,0),levels=c(0,1),labels=c('否','是')),#中风
   disea33_risk=factor(ifelse(B3_33==1 & !is.na(B3_33),1,0),levels=c(0,1),labels=c('否','是')),#偏头疼
-  代谢综合征=factor(ifelse(BMI>=25 & disea28_risk=='是' & disea29_risk=='是',1,0),levels=c(0,1),labels = c('否','是')),
-  代谢紊乱相关因素=factor(ifelse(BMI>=25 | disea28_risk=='是' | disea29_risk=='是',1,0),levels=c(0,1),labels = c('否','是')),
+  #代谢综合征=factor(ifelse(BMI>=25 & disea28_risk=='是' & disea29_risk=='是',1,0),levels=c(0,1),labels = c('否','是')),
+ #  代谢紊乱相关因素=factor(ifelse(BMI>=25 | disea28_risk=='是' | disea29_risk=='是',1,0),levels=c(0,1),labels = c('否','是')),
   #职业暴露
   cadmium_risk=factor(ifelse(B24_2==1 & !is.na(B24_2),1,0),levels=c(0,1),labels=c('否','是')),#镉
   asbestos_risk=factor(ifelse(B24_1==1 & !is.na(B24_1),1,0),levels=c(0,1),labels=c('否','是')),#石棉
@@ -296,8 +302,7 @@ pepsinogen2019<-pepsinogen2019%>%transmute(
     
   ),
   妇科手术史=factor(妇科手术史,levels=c(1,2,3),labels=c('无子宫摘除或卵巢摘除','有子宫摘除无卵巢摘除','有卵巢摘除')),
-  阳性判定结果=factor(B43,levels=c(1,2,3,4,5),labels=c('阴性','肺部高危','乳腺高危','肝部高危','胃部高危'))
-  
+ 胃癌问卷阳性=factor(ifelse(B43==5,1,0),levels=c(0,1),labels=c('阴性','阳性'))
 )%>%transmute(
   #匹配信息
   ID=ID,F_ID,name,persoID,
@@ -312,10 +317,10 @@ pepsinogen2019<-pepsinogen2019%>%transmute(
   运动=exercise_risk,快走=jog_risk,太极=taichi_risk,
   广场舞=fitdance_risk,瑜伽=yoga_risk,游泳=swim_risk,跑步=run_risk,球类=ball_risk,器械=apparatus_risk,
   #BMI
-  BMI=BMI,BMI_group=BMI_risk,BMI_group2=BMI_risk2, BMI_group3=BMI_risk3,
+  BMI=BMI,BMI_group=BMI_risk,BMI_group2=BMI_risk2, BMI_group3=BMI_risk3,BMI_group4=BMI_risk4,
   #吸烟相关
   包年,包年分组,cpd,smkyrs,吸烟年数分组,吸烟年数分组2,
-  吸烟1=smk_risk1,吸烟2=smk_risk2,吸烟3=smk_risk3,
+  吸烟1=smk_risk1,吸烟2=smk_risk2,吸烟3=smk_risk3,吸烟4=smk_risk4,
   被动吸烟1=psmk_risk1,被动吸烟2=psmk_risk2,
   #生活习惯
   每天早餐=breakfast_risk,准点吃饭=dalayeat_risk,吃饭速度=speedeat_risk,外出吃饭=outeat_risk,
@@ -341,7 +346,7 @@ pepsinogen2019<-pepsinogen2019%>%transmute(
   #胃肠疾病=stomach_disea,
   #慢性病史
   糖尿病=disea28_risk,高血压=disea29_risk,高血脂=disea30_risk,冠心病=disea31_risk,偏头疼=disea33_risk,
-  代谢综合征,代谢紊乱相关因素,
+  #代谢综合征,代谢紊乱相关因素,
   #职业暴露
   镉=cadmium_risk,石棉=asbestos_risk,镍=nickel_risk,砷=arsenic_risk,氡=radon_risk,
   氯乙烯=chloroethy_risk,X射线=Xray_risk,苯=benzene_risk,
@@ -391,7 +396,7 @@ pepsinogen2019<-pepsinogen2019%>%transmute(
     雌激素影响时间>=39 ~ 4
   ),
   雌激素影响时间分组=factor(雌激素影响时间分组,levels=c(1,2,3,4),labels=c('<33','33-35.9','36-38.9','>=39')),
-  妇科手术史,阳性判定结果
+  妇科手术史,胃癌问卷阳性
 )
 #基本分布
 #my.render.cat <- function(x) {
@@ -412,7 +417,7 @@ pepsinogen2019<-pepsinogen2019%>%transmute(
 data_PG2019<-import('~/data/2019/标志物示范区2019.xlsx')
 #names(data_PG2019)
 data_PG2019<-data_PG2019%>%transmute(
-  ID=ID,age_PG=年龄,name_PG2019=姓名,persoID_PG2019=身份证号,AFP=AFP, CA199=`CA19-9`,#CA125=`CA-125`,CA153=`CA15-3`,CEA=CEA,
+  ID=ID,age_PG=年龄,name_PG2019=姓名,persoID_PG2019=身份证号,#AFP=AFP, CA199=`CA19-9`,#CA125=`CA-125`,CA153=`CA15-3`,CEA=CEA,
   PG1=PGⅠ,PG2=PGⅡ,PGR=`PGⅠ/PGⅡ`,
   hbsag=HBsAg,
   PG1_range=case_when(
@@ -438,12 +443,12 @@ data_PG2019<-data_PG2019%>%transmute(
   ),
   PG1_range2=factor(PG1_range2,levels=c(1,2,3,4),labels=c('<43.4','43.4-56.9','57.0-76.5','>=76.5')),
   PG1_range3=case_when(
-    PG1<30 ~ 1,
-    PG1>=30 & PG1<=50.0 ~ 2,
+    PG1<=30 ~ 1,
+    PG1>30 & PG1<=50.0 ~ 2,
     PG1>50.0 & PG1<=70.0 ~ 3,
-    PG1>=70 ~ 4
+    PG1>70 ~ 4
   ),
-  PG1_range3=factor(PG1_range3,levels=c(1,2,3,4),labels=c('<30','30-49.9','50-69.9','>=70')),
+  PG1_range3=factor(PG1_range3,levels=c(1,2,3,4),labels=c('<=30','30.01-50','50.01-70','>70')),
   PG1_range4=case_when(
     PG1<20 ~ 1,
     PG1>=20 & PG1<=50.0 ~ 2,
@@ -470,31 +475,39 @@ data_PG2019<-data_PG2019%>%transmute(
   
   PG2_range3=factor(ifelse(PG2<=12,0,1),levels=c(0,1),labels=c('<=12','>12')),
   PG2_range4=factor(ifelse(PG2<=15,0,1),levels=c(0,1),labels=c('<=12','>12')),
+  PG2_range5=case_when(
+    PG2<=7.5 ~ 1,
+    PG2>7.5 & PG2<=12.5 ~ 2,
+    PG2>12.5 & PG2<=17.5 ~ 3,
+    PG2>17.5 & PG2<=24.5 ~ 4,
+    PG2>24.5 ~ 5
+  ),
+  PG2_range5=factor(PG2_range5,levels = c(1,2,3,4,5),labels=c('<=7.5','7.6-12.5','12.6-17.5','17.5-24.5','>24.5')),
   
   PGR_range=case_when(
-    PGR<3 ~ 1,
-    between(PGR,3,7) ~ 2,
+    PGR<=3 ~ 1,
+    between(PGR,3.01,7) ~ 2,
     PGR>7 ~ 3
   ),
   PGR_range=factor(PGR_range,levels=c(1,2,3),labels=c('<3','3-7','>7')),
   PGR_range2=case_when(
     PGR<=3 ~ 1,
-    PGR>3 & PGR<6 ~ 2,
-    PGR>=6 & PGR<9  ~ 3,
-    PGR>=9   ~ 4
+    PGR>3 & PGR<=6 ~ 2,
+    PGR>6 & PGR<=9  ~ 3,
+    PGR>9   ~ 4
   ),
-  PGR_range2=factor(PGR_range2,levels=c(1,2,3),labels=c('<3','3-7','>7')),
+  PGR_range2=factor(PGR_range2,levels=c(1,2,3,4),labels=c('<=3','3.01-6','6.01-9','>9')),
   PG_pos=factor(ifelse(PG1<=70 & PGR<=3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
   
-  PG_pos_1=factor(ifelse(PG1<70 & PGR<3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+  #PG_pos_1=factor(ifelse(PG1<70 & PGR<3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
   PG_pos1=factor(ifelse(PG1<=50 & PGR<=3,1,0),levels=c(0,1),labels=c('阴性','阳性')),
   PG_pos2=factor(ifelse(PG1<=30 & PGR<=2,1,0),levels=c(0,1),labels=c('阴性','阳性')),
   PG_pos3<-NA,
   PG_pos3[PG1<=70 & PGR<=3]<-2,
   PG_pos3[PG1<=50 & PGR<=3]<-3,
-  PG_pos3[PG1<=30 & PGR<=3]<-4,
+  PG_pos3[PG1<=30 & PGR<=2]<-4,
   PG_pos3[is.na(PG_pos3)]<-1,
-  PG_pos3=factor(PG_pos3,levels=c(1,2,3,4),labels=c('正常','轻度萎缩','中度萎缩','重度萎缩')),
+  PG_pos3=factor(PG_pos3,levels=c(1,2,3,4),labels=c('阴性','弱阳性','中度阳性','极度阳性')),
   PG_pos4<-NA,
   PG_pos4[PG1<=70 & PGR<=3]<-2,
   PG_pos4[PG1<=30 & PGR<=2]<-3,
@@ -523,18 +536,20 @@ data_PG2019<-data_PG2019%>%transmute(
     PG1<=30 & PGR<=3 ~ 6
   ),
   PG_pos13=factor(PG_pos13,levels=c(1,2,3,4,5,6),labels=c('PGa','PGb','PGc','PGd','PGe','PGf')),
-  PG_pos14=factor(ifelse(PG1<25,1,0),levels=c(0,1),labels=c('PG1>=25','PG1<25')),
-  CA199_pos=factor(ifelse(CA199>27,1,0),levels=c(0,1),labels=c('阴性','阳性')),
+  #PG_pos14=factor(ifelse(PG1<25,1,0),levels=c(0,1),labels=c('PG1>=25','PG1<25')),
+  #CA199_pos=factor(ifelse(CA199>27,1,0),levels=c(0,1),labels=c('阴性','阳性')),
   )%>%transmute(
-  ID,PG1,PG2,PGR,AFP,hbsag,
+  ID,PG1,PG2,PGR,hbsag,#AFP,
   PG1_range,PG1_range1,PG1_range2,PG1_range3,PG1_range4,
-  PG2_range,PG2_range2,PG2_range3,PG2_range4,
-  PGR_range,PGR_range2,PG_pos12, PG_pos13,PG_pos14,PG_pos_1,
-  PG_pos,PG_pos1,PG_pos2,PG_pos3,PG_pos4,PG_pos5,PG_pos6,PG_pos7,PG_pos8,PG_pos9,PG_pos10,PG_pos11,CA199,CA199_pos
+  PG2_range,PG2_range2,PG2_range3,PG2_range4,PG2_range5,
+  PGR_range,PGR_range2,PG_pos12, PG_pos13,#PG_pos_1,#PG_pos14,
+  PG_pos,PG_pos1,PG_pos2,PG_pos3,PG_pos4,PG_pos5,PG_pos6,PG_pos7,PG_pos8,PG_pos9,PG_pos10,PG_pos11,#CA199,CA199_pos
 )
-pepsinogen2019<-inner_join(pepsinogen2019,data_PG2019,by='ID')
-pepsinogen2019<-pepsinogen2019%>%
+screening2019<-inner_join(pepsinogen2019,data_PG2019,by='ID')
+screening2019<-screening2019%>%
   filter(ID!=31030159,ID!=31060461,自身癌!='是',残胃!='是')
+rm(data_PG2019)
+rm(pepsinogen2019)
 
 
 

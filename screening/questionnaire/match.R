@@ -1,7 +1,13 @@
 rm(list=ls())
 library(rio)
 library(tidyverse)
+library(rms)
+library(forestmodel)
+library(pROC)
+library(epiR)
 source('~/Rcode/screening/questionnaire/questionnaire2020.R')
+source('~/Rcode/statistics/Table1.R')
+source('~/Rcode/statistics/OR.R')
 #重复编号及身份证号
 mat_id<-screening2020[which(duplicated(screening2020$persoID)),'persoID']
 mat_id2<-data_Hp2020[which(duplicated(data_Hp2020$persoID)),'persoID']
@@ -16,10 +22,10 @@ data_Hp2020[which(data_Hp2020$初筛编号=='10301342'),'persoID']<-'12010319511
 ####
 screening2020<-screening2020[-which(screening2020$ID %in% c(41070329,41080415,41080539,41030443,41030427)),]
 data_Hp2020<-data_Hp2020[-which(data_Hp2020$初筛编号 %in% c(10701496,10700222,10800446,10304813,10301291,10303214,21032108,10303714,10303730,10301283,10901603,10300805,21081191,10304967)),]
-###匹配
-#1、问卷与Hp
-match1<-inner_join(screening2020,data_Hp2020,by='persoID')
-match1_not<-inner_join(s)
+
+
+
+
 
 
 

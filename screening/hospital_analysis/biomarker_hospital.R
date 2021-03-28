@@ -10,15 +10,13 @@ data<-import('~/data/biomarker_hospital.xlsx')
 #4、将同一个人的数据合并成一行
 ##########
 data1.1<-data%>%select(PtName,MRN,ExtIDPat,DtValidate,TestCode,TestResult)
-sum(is.na(data1.1$PtName))#102缺失
-sum(is.na(data1.1$MRN))#810缺失
-sum(is.na(data1.1$ExtIDPat))#24603缺失
-sum(is.na(data1.1$DtValidate))#55缺失
-sum(is.na(data1.1$TestCode))#0缺失
-sum(is.na(data1.1$TestResult))#54050缺失
 #
 data2.1<-data1.1%>%filter(!is.na(TestResult))%>%filter(is.na(PtName) & is.na(MRN) & 
                                                       is.na(ExtIDPat) & is.na(DtValidate))
+
+
+
+
 #长变宽190735行变68370人次
 data2<-data1.1%>%filter(!is.na(TestResult))%>%filter(!is.na(PtName) | !is.na(MRN) | 
                                                     !is.na(ExtIDPat) | !is.na(DtValidate))%>%
@@ -130,7 +128,105 @@ PG$freq<-apply(PG[,-1:-3],1,function(x)sum(!is.na(x)))
 ###
 fulldata<-list('CA125'=ca125,'CA153'=ca153,'CA199'=ca199,'AFP'=afp,'CEA'=cea,'PG'=PG)
 write.xlsx(fulldata, '~/data2.xlsx')
- 
+
+####################<<<<<<<<<<<<<2020-12-10分析>>>>>>>>>>>>>>>>>>>>>#####
+rm(list=ls())
+#读取数据
+PG<-import('~/data/biomarker_hospital2.xlsx')
+#查看数据
+summary(PG)
+apply(PG,2,function(x)sum(is.na(x)))
+
+apply(PG1,2,function(x)sum(is.na(x)))
+PG1%>%filter(is.na(MRN),is.na(ExtIDPat))
+id1<-PG1[which(duplicated(PG1$MRN) & !is.na(PG1$MRN)),'MRN']
+PG1[which(is.na(PG1$MRN)),'ExtIDPat']
+#PG1[which(duplicated(PG1$MRN) & !is.na(PG1$MRN))
+apply(PG1,2,function(x)sum(is.na(x)))
+
+##########处理数据
+PG1<-PG%>%transmute(PtName,Expression_1,MRN,ExtIDPat,TestCode,TestResult,
+                    MRN2=ifelse(is.na(MRN),ExtIDPat,MRN))%>%filter(!is.na(TestResult),!is.na(PtName),!is.na(MRN2))
+PG2<-PG1%>%pivot_wider(id_cols=c('PtName','MRN2','ExtIDPat','Expression_1'),names_from = TestCode,values_from=TestResult)%>%data.frame()
+##MRN一样，ExtIDPat一定一样吗
+#summary(PG2)
+apply(PG2,2,function(x)sum(is.na(x)))
+PG2.2<-PG2%>%transmute(MRN2,ExtIDPat)
+PG2.2.split<-split(PG2.2,PG2.2$MRN2)
+max(as.data.frame(lapply(PG2.2.split,function(x)nrow(x))))
+PG2.3<-lapply(PG2.2.split,function(x){
+  x[1:49,'MRN2']<-x[1,'MRN2']
+  x$seq<-seq(nrow(x)) 
+  row.names(x)<-NULL
+  x<-pivot_wider(x,names_from = seq,values_from =ExtIDPat)
+  return(x)
+})
+PG2.4<-do.call(rbind,PG2.3) 
+export(PG2.4,'~/PG(住院号+门诊号).xlsx')
+###MRN2和PG
+PG3.2<-PG2%>%transmute(MRN2,PG=paste(Expression_1,'|',PG1,'|',PG2))
+PG3.2.split<-split(PG3.2,PG3.2$MRN2)
+max(as.data.frame(lapply(PG3.2.split,function(x)nrow(x))))
+PG3.3<-lapply(PG3.2.split,function(x){
+  x[1:49,'MRN2']<-x[1,'MRN2']
+  x$seq<-seq(nrow(x)) 
+  row.names(x)<-NULL
+  x<-pivot_wider(x,names_from = seq,values_from =PG)
+  return(x)
+})
+PG3.4<-do.call(rbind,PG3.3) 
+export(PG3.4,'~/PG(PG).xlsx')
+###MRN2和姓名
+PG4.2<-PG2%>%transmute(MRN2,PtName)
+PG4.2.split<-split(PG4.2,PG4.2$MRN2)
+max(as.data.frame(lapply(PG4.2.split,function(x)nrow(x))))
+PG4.3<-lapply(PG4.2.split,function(x){
+  x[1:49,'MRN2']<-x[1,'MRN2']
+  x$seq<-seq(nrow(x)) 
+  row.names(x)<-NULL
+  x<-pivot_wider(x,names_from = seq,values_from =PtName)
+  return(x)
+})
+PG4.4<-do.call(rbind,PG4.3) 
+export(PG4.4,'~/PG(name).xlsx')
+############ExtIDPat和MRN2
+PG3<-PG2%>%filter(!is.na(ExtIDPat))
+PG3.1<-PG3%>%transmute(MRN2,ExtIDPat)
+PG3.2.split<-split(PG3.1,PG3.1$ExtIDPat)
+PG3.3<-lapply(PG3.2.split,function(x){
+  x<-x[!duplicated(x[,'MRN2']),]
+  x[1:2,'ExtIDPat']<-x[1,'ExtIDPat']
+  x$seq<-seq(nrow(x)) 
+  row.names(x)<-NULL
+  x<-pivot_wider(x,names_from = seq,values_from =MRN2)
+  return(x)
+})
+PG3.4<-do.call(rbind,PG3.3) 
+export(PG3.4,'~/PG(住院号+门诊号2).xlsx')
+############ExtIDPat和PG
+PG3<-PG2%>%filter(!is.na(ExtIDPat))
+PG3.1<-PG3%>%transmute(ExtIDPat,PG=paste(Expression_1,'|',PG1,'|',PG2))
+PG3.2.split<-split(PG3.1,PG3.1$ExtIDPat)
+max(as.data.frame(lapply(PG3.2.split,function(x)nrow(x))))
+PG3.3<-lapply(PG3.2.split,function(x){
+  x[1:49,'ExtIDPat']<-x[1,'ExtIDPat']
+  x$seq<-seq(nrow(x)) 
+  row.names(x)<-NULL
+  x<-pivot_wider(x,names_from = seq,values_from =PG)
+  return(x)
+})
+PG3.4<-do.call(rbind,PG3.3) 
+export(PG3.4,'~/PG(PG2).xlsx')
+
+
+
+
+
+
+
+
+
+
 
 
 

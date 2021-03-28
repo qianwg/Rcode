@@ -580,22 +580,16 @@ match$type<-factor(match$type,levels=1:9,labels=c('正常','消化性溃疡','�
 match%>%filter%>%filter(!is.na(type))%>%group_by(type)%>%summarise(n=n(),median=median(PG1),Q1=quantile(PG1,0.25),Q3=quantile(PG1,0.75))%>%
   transmute(level,n,median=paste0(median,"(",Q1,"-",Q3,")"))%>%datatable()
 ##PG1
-pg1_match<-match%>%group_by(type)%>%summarise(n=n(),median=median(PG1,na.rm = TRUE),Q1=quantile(PG1,na.rm = TRUE,0.25),Q3=quantile(PG1,na.rm = TRUE,0.75),
-                                              median.pg2=median(PG2,na.rm = TRUE),Q1.pg2=quantile(PG2,na.rm = TRUE,0.25),Q3.pg2=quantile(PG2,na.rm = TRUE,0.75))%>%
-  filter(type!='正常' & type!='胃息肉' & !is.na(type) & type!='胃切除术')%>%
-  ggplot(aes(x=type,y=median))+geom_point(color='red')+scale_x_discrete(limits=c('慢性胃炎','消化性溃疡','萎缩性胃炎','肠上皮化生','不典型增生','胃癌'),
-                                                                        labels=c('慢性胃炎\n(N=155)','消化性溃疡\n(N=4)','萎缩性胃炎\n(N=12)','肠上皮化生\n(N=9)','不典型增生\n(N=13)','胃癌\n(N=3)'))+
-  mytheme+labs(x='',y='Median(Q-Q3)')+geom_point(aes(x=type,y=Q1),color='blue')+geom_point(aes(x=type,y=Q3),color='blue')+
-  stat_summary(fun.y=median,geom="line",lwd=1,aes(group=1),color='blue')+geom_pointrange(aes(ymin=Q1,ymax=Q3),color='blue')
-
-#PG2
-pg2_match<-match%>%group_by(type)%>%summarise(n=n(),median=median(PG2,na.rm = TRUE),Q1=quantile(PG2,na.rm = TRUE,0.25),Q3=quantile(PG2,na.rm = TRUE,0.75))%>%
-  filter(type!='正常' & type!='胃息肉' & !is.na(type) & type!='胃切除术')%>%
-  ggplot(aes(x=type,y=median))+geom_point(color='red')+scale_x_discrete(limits=c('慢性胃炎','消化性溃疡','萎缩性胃炎','肠上皮化生','不典型增生','胃癌'),
-                                                                        labels=c('慢性胃炎\n(N=155)','消化性溃疡\n(N=4)','萎缩性胃炎\n(N=12)','肠上皮化生\n(N=9)','不典型增生\n(N=13)','胃癌\n(N=3)'))+
-  mytheme2+labs(x='胃镜/病理结果',y='Median(Q-Q3)')+geom_point(aes(x=type,y=Q1),color='orange')+geom_point(aes(x=type,y=Q3),color='orange')+
-  stat_summary(fun.y=median,geom="line",lwd=1,aes(group=1),color='orange')+geom_pointrange(aes(ymin=Q1,ymax=Q3),color='orange')+scale_y_continuous(limits=c(0,30))
-pg1_match / pg2_match
+PG1.normal<-data%>%ggplot(aes(x=PG1))+geom_histogram(aes(y=..density..),bins=40,color='black',fill='lightblue')+
+  geom_vline(xintercept = 69.60,color='blue',size=1)+stat_function(fun=dnorm,args=list(mean=mean(data$PG1),sd=sd(data$PG1)),col='red',size=1)+mytheme+
+  scale_x_continuous(breaks=c(0,20,50,70,100,150,200),expand = c(0,0))+scale_y_continuous(expand = c(0,0))
+PG2.normal<-data%>%ggplot(aes(x=PG2))+geom_histogram(aes(y=..density..),bins=40,color='black',fill='lightblue')+
+  geom_vline(xintercept = 17.10,color='blue',size=1)+stat_function(fun=dnorm,args=list(mean=mean(data$PG2),sd=sd(data$PG2)),col='red',size=1)+mytheme+
+  scale_x_continuous(breaks=c(0,6,10,15,20,50),limits = c(0,51),expand = c(0,0))+scale_y_continuous(expand = c(0,0))+labs(y=" ")
+PGR.normal<-data%>%ggplot(aes(x=PGr))+geom_histogram(aes(y=..density..),bins=40,color='black',fill='lightblue')+
+  geom_vline(xintercept = 5.65,color='blue',size=1)+stat_function(fun=dnorm,args=list(mean=mean(data$PGr),sd=sd(data$PGr)),col='red',size=1)+mytheme+
+  scale_x_continuous(breaks=c(0,1,2,3,6,10,15,20),expand = c(0,0))+scale_y_continuous(expand = c(0,0))+labs(y=" ")
+PG1.normal | PG2.normal | PGR.normal
 
 
 
