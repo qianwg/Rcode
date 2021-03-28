@@ -546,6 +546,7 @@ forest_model(model.PFI.N)
 write.xlsx(list(OS=cox.OS.T,DSS=cox.DSS.T,DFI=cox.DFI.T,PFI=cox.PFI.T),file='~/tu3/cox.LUNG.xlsx')
 
 
+######2020-12-24分析
 
 
 
