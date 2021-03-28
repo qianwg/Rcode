@@ -1,0 +1,10 @@
+rm(list=ls())
+library(rio)
+library(tidyverse)
+##2011年基线
+demograph2014<-import('~/data/CHARLS/CHARLS2014/Demographic_Backgrounds.dta')%>%select(-householdID,-communityID)
+Sample_Infor2014<-import('~/data/CHARLS/CHARLS2014/Sample_Infor.dta')%>%select(-householdID,-communityID)
+Residence2014<-import('~/data/CHARLS/CHARLS2014/Residence.dta')%>%select(-householdID,-communityID)
+export(demograph2014,'~/demograph2014.sav')
+export(Sample_Infor2014,'~/Sample_Infor2014.sav')
+export(Residence2014,'~/Residence2014.sav')
