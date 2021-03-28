@@ -27,7 +27,7 @@ cat.var <- function(var,
                            format(round((tot / colSums(tot)) * 100, dec), 
                                   nsmall = dec), 
                            '%)')
-                    )
+    )
     miss <- length(which(is.na(var) == T))
     
     # Combine total count (%) and missing values into a data frame
@@ -63,7 +63,7 @@ cat.var <- function(var,
                          format(round((n / sum(n)) * 100, dec),
                                 nsmall = dec),
                          '%)')
-                  )
+    )
     n <- cbind(t(n), apply(tot, 2, sum))
     
     # Stratified summary: count (row %)(col %)
@@ -76,8 +76,8 @@ cat.var <- function(var,
                                   format(round(t(t(cat) / colSums(cat)) * 100, dec), 
                                          nsmall = dec),
                                   '%)')
-                          )
-                        )
+                    )
+    )
     
     # Overall summary: count (row %)(col %)
     tot[] <- paste0(tot, 
@@ -89,16 +89,16 @@ cat.var <- function(var,
                                   format(round((tot / colSums(tot)) * 100, dec), 
                                          nsmall = dec), 
                                   '%)')
-                          )
-                        )
+                    )
+    )
     
     # Aggregate missings
     miss <- c(aggregate(var, 
                         list(strat), 
                         function(x) {sum(is.na(x))})[, -1],
-                        sum(aggregate(var, list(strat), 
-                        function(x) {sum(is.na(x))})[, -1])
-              )
+              sum(aggregate(var, list(strat), 
+                            function(x) {sum(is.na(x))})[, -1])
+    )
     
     # cbind stratified and overall summaries
     # rbind counts and missings to create complete summary
@@ -134,8 +134,8 @@ cat.var <- function(var,
                          format(round((n / sum(n)) * 100, dec),
                                 nsmall = dec), 
                          '%)'
-                         )
-                        )
+                  )
+    )
     n <- cbind(t(n), apply(tot, 2, sum))
     
     # Stratified summary
@@ -144,8 +144,8 @@ cat.var <- function(var,
                            format(round((cat / rowSums(cat)) * 100, dec), 
                                   nsmall = dec), 
                            '%)'
-                           )
-                          )
+                    )
+    )
     
     # Overall summary
     tot[] <- paste0(tot, 
@@ -153,16 +153,16 @@ cat.var <- function(var,
                            format(round((tot / rowSums(tot)) * 100, dec), 
                                   nsmall=dec), 
                            '%)'
-                           )
-                          )
+                    )
+    )
     
     # Aggregate missings
     miss <- c(aggregate(var, 
                         list(strat), 
                         function(x) {sum(is.na(x))})[,-1],
-                        sum(aggregate(var, list(strat), 
-                        function(x) {sum(is.na(x))})[,-1])
-              )
+              sum(aggregate(var, list(strat), 
+                            function(x) {sum(is.na(x))})[,-1])
+    )
     
     # cbind stratified and overall summaries
     # rbind counts and missings to create complete summary
@@ -198,7 +198,7 @@ cat.var <- function(var,
                          format(round((n / sum(n)) * 100, dec),
                                 nsmall = dec), 
                          '%)')
-                  )
+    )
     n <- cbind(t(n), apply(tot, 2, sum))
     
     # Stratified summary
@@ -206,16 +206,16 @@ cat.var <- function(var,
                     paste0(' (', 
                            format(round(t(t(cat) / colSums(cat)) * 100, dec), 
                                   nsmall = dec), '%)'
-                           )
-                          )
+                    )
+    )
     
     # Overall summary
     tot[] <- paste0(tot, 
                     paste0(' (', 
                            format(round((tot / colSums(tot)) * 100, dec), 
                                   nsmall = dec), '%)'
-                           )
-                          )
+                    )
+    )
     
     # Missings
     miss <- c(aggregate(var, list(strat), function(x) {sum(is.na(x))})[, -1],
@@ -334,45 +334,45 @@ cont.var <- function(var,
     
     # Mean (standard deviation)
     mean.sd.tot <- paste(
-                      format(
-                        round(mean(var, na.rm = TRUE), dec), 
-                      nsmall = dec), 
-                      paste('(', 
-                        format(
-                          round(sd(var, na.rm = TRUE), dec), 
-                        nsmall = dec), ')', 
-                      sep='')
-                      )
+      format(
+        round(mean(var, na.rm = TRUE), dec), 
+        nsmall = dec), 
+      paste('(', 
+            format(
+              round(sd(var, na.rm = TRUE), dec), 
+              nsmall = dec), ')', 
+            sep='')
+    )
     
     # Median (interquartile range)
     med.iqr.tot <- paste(
-                      format(
-                        round(median(var, na.rm = TRUE), dec), 
-                      nsmall = dec), 
-                      paste('(', 
-                        format(
-                          round(IQR(var, na.rm = TRUE), dec), 
-                        nsmall = dec), ')', 
-                      sep = '')
-                      )
+      format(
+        round(median(var, na.rm = TRUE), dec), 
+        nsmall = dec), 
+      paste('(', 
+            format(
+              round(IQR(var, na.rm = TRUE), dec), 
+              nsmall = dec), ')', 
+            sep = '')
+    )
     
     # 25th percentile, 75th percentile
     q1.q3.tot <- paste(
-                    format(
-                      round(quantile(var, 0.25, na.rm = TRUE), dec), 
-                    nsmall = 2), ', ',
-                    format(
-                      round(quantile(var, 0.75, na.rm = TRUE), dec)), 
-                    sep = '')
+      format(
+        round(quantile(var, 0.25, na.rm = TRUE), dec), 
+        nsmall = 2), ', ',
+      format(
+        round(quantile(var, 0.75, na.rm = TRUE), dec)), 
+      sep = '')
     
     # Minimum, maximum
     min.max.tot <- paste(
-                      format(
-                        round(min(var, na.rm = TRUE), dec), 
-                        nsmall = dec), ', ',
-                      format(
-                        round(max(var, na.rm = TRUE), 2)), 
-                      sep = '')
+      format(
+        round(min(var, na.rm = TRUE), dec), 
+        nsmall = dec), ', ',
+      format(
+        round(max(var, na.rm = TRUE), 2)), 
+      sep = '')
     
     # Missings
     miss.tot <- length(which(is.na(var) == TRUE))
@@ -408,12 +408,12 @@ cont.var <- function(var,
       
       # Mean (standard deviation)
       mean.sd <- format(
-                    round(aggregate(var, 
-                                    list(strat), 
-                                    mean, 
-                                    na.rm = TRUE)[, -1], 
-                          dec), 
-                 nsmall = dec)
+        round(aggregate(var, 
+                        list(strat), 
+                        mean, 
+                        na.rm = TRUE)[, -1], 
+              dec), 
+        nsmall = dec)
       mean.sd[] <- paste0(mean.sd, 
                           paste0(' (', 
                                  (format(
@@ -424,16 +424,16 @@ cont.var <- function(var,
                                          dec), 
                                    nsmall = dec)),
                                  ')')
-                          )
+      )
       
       # Median (interquartile range)
       med.iqr <- format(
-                    round(aggregate(var, 
-                                    list(strat), 
-                                    median, 
-                                    na.rm = TRUE)[, -1], 
-                          dec), 
-                 nsmall = dec)
+        round(aggregate(var, 
+                        list(strat), 
+                        median, 
+                        na.rm = TRUE)[, -1], 
+              dec), 
+        nsmall = dec)
       med.iqr[] <- paste0(med.iqr, 
                           paste0(' (', 
                                  (format(
@@ -444,17 +444,17 @@ cont.var <- function(var,
                                          dec), 
                                    nsmall = dec)), 
                                  ')')
-                          )
+      )
       
       # 25th percentile, 75th percentile
       q1.q3 <- format(
-                  round(aggregate(var, 
-                                  list(strat), 
-                                  quantile, 
-                                  0.25, 
-                                  na.rm=T)[,-1], 
-                        dec), 
-               nsmall=dec)
+        round(aggregate(var, 
+                        list(strat), 
+                        quantile, 
+                        0.25, 
+                        na.rm=T)[,-1], 
+              dec), 
+        nsmall=dec)
       q1.q3[] <- paste0(q1.q3, 
                         paste0(', ', 
                                (format(
@@ -465,28 +465,28 @@ cont.var <- function(var,
                                                  na.rm = TRUE)[, -1], 
                                        dec), 
                                  nsmall=dec))
-                          )
                         )
+      )
       
       # Minimum, maximum
       min.max <- format(
-                    round(aggregate(var, 
-                                    list(strat), 
-                                    min, 
-                                    na.rm=T)[,-1], 
-                          dec), 
-                  nsmall=dec)
+        round(aggregate(var, 
+                        list(strat), 
+                        min, 
+                        na.rm=T)[,-1], 
+              dec), 
+        nsmall=dec)
       min.max[] <- paste0(min.max, 
                           paste0(', ', 
-                            (format(
-                                round(aggregate(var, 
-                                                list(strat), 
-                                                max, 
-                                                na.rm=T)[,-1],
-                                      dec), 
+                                 (format(
+                                   round(aggregate(var, 
+                                                   list(strat), 
+                                                   max, 
+                                                   na.rm=T)[,-1],
+                                         dec), 
                                    nsmall=dec))
-                                  )
-                                )
+                          )
+      )
       
       # Missings
       miss <- aggregate(var, 
@@ -511,47 +511,47 @@ cont.var <- function(var,
       
       # Overall mean (standard deviation)
       mean.sd.tot <- paste(
-                        format(
-                          round(mean(var[!is.na(strat)], na.rm = TRUE), dec), 
-                        nsmall = dec), 
-                        paste('(', 
-                          format(
-                            round(sd(var[!is.na(strat)], na.rm = TRUE), dec), 
-                          nsmall = dec), ')', 
-                        sep = '')
-                        )
+        format(
+          round(mean(var[!is.na(strat)], na.rm = TRUE), dec), 
+          nsmall = dec), 
+        paste('(', 
+              format(
+                round(sd(var[!is.na(strat)], na.rm = TRUE), dec), 
+                nsmall = dec), ')', 
+              sep = '')
+      )
       
       # Overall median (interquartile range)
       med.iqr.tot <- paste(
-                        format(
-                          round(median(var[!is.na(strat)], na.rm = TRUE), dec), 
-                        nsmall = dec), 
-                        paste('(', 
-                          format(
-                            round(IQR(var[!is.na(strat)], na.rm = TRUE), dec), 
-                          nsmall = dec), ')', 
-                        sep = '')
-                        )
+        format(
+          round(median(var[!is.na(strat)], na.rm = TRUE), dec), 
+          nsmall = dec), 
+        paste('(', 
+              format(
+                round(IQR(var[!is.na(strat)], na.rm = TRUE), dec), 
+                nsmall = dec), ')', 
+              sep = '')
+      )
       
       # Overall 25th percentile, 75th percentile
       q1.q3.tot <- paste(
-                      format(
-                        round(quantile(var[!is.na(strat)], 0.25, na.rm = TRUE), dec), 
-                      nsmall = dec), ', ',
-                      format(
-                        round(quantile(var[!is.na(strat)], 0.75, na.rm = TRUE), dec),
-                      nsmall = dec), 
-                    sep = '') 
+        format(
+          round(quantile(var[!is.na(strat)], 0.25, na.rm = TRUE), dec), 
+          nsmall = dec), ', ',
+        format(
+          round(quantile(var[!is.na(strat)], 0.75, na.rm = TRUE), dec),
+          nsmall = dec), 
+        sep = '') 
       
       # Overall minimum, maximum
       min.max.tot <- paste(
-                        format(
-                          round(min(var[!is.na(strat)], na.rm = TRUE), dec), 
-                        nsmall = dec), ', ',
-                        format(
-                          round(max(var[!is.na(strat)], na.rm = TRUE), dec),
-                        nsmall = dec), 
-                      sep = '')
+        format(
+          round(min(var[!is.na(strat)], na.rm = TRUE), dec), 
+          nsmall = dec), ', ',
+        format(
+          round(max(var[!is.na(strat)], na.rm = TRUE), dec),
+          nsmall = dec), 
+        sep = '')
       
       # Overall missings
       miss.tot = sum(miss)
@@ -595,7 +595,7 @@ cont.var <- function(var,
                        as.vector(levels(as.factor(strat))), 
                        'Overall', 
                        'p-value')    
-    }
+  }
   
   # Print p-values with the name of the test used (default)
   else if (pname == TRUE & !('count' %in% cont.rmstat)) {
@@ -607,7 +607,7 @@ cont.var <- function(var,
                        as.vector(levels(as.factor(strat))), 
                        'Overall', 
                        'p-value')
-    }
+  }
   
   # Print p-values with the name of the test used if 'count' %in% cont.rmstat
   else if (pname == TRUE & ('count' %in% cont.rmstat)) {
@@ -620,7 +620,7 @@ cont.var <- function(var,
                        as.vector(levels(as.factor(strat))), 
                        'Overall', 
                        'p-value')
-    }
+  }
   
   # Remove summary statistics specified in cont.rmstat
   if (!(any(cont.rmstat == 'None'))) {
@@ -631,7 +631,7 @@ cont.var <- function(var,
                           'minmax', 
                           'miss') 
                         %in% cont.rmstat)) + 1), ]
-    }
+  }
   
   # Replace uncalculated quantities with dashes
   out[grepl("NA", out)] <- "-"
@@ -641,10 +641,10 @@ cont.var <- function(var,
   # Add vertical spacing between variables in plain and HTML output
   if (vspace == TRUE & output == "plain") {
     out <- rbind(out, rep(" ", dim(out)[2]))
-    }
+  }
   if (vspace == TRUE & output == "html") {
     out <- rbind(out, rep("&nbsp;", dim(out)[2]))
-    }
+  }
   return(data.frame(out))
 }
 
@@ -676,68 +676,68 @@ out.latex <- function(tab,
     named <- ifelse(tags == FALSE, 
                     paste("\\textbf{", named, "}", sep = ""), 
                     named)
-    }
-    else if (header.style == "italic") {
-      named <- ifelse(tags == FALSE, 
-                      paste("\\textit{", named, "}", sep = ""), 
-                      named)
-      }
-      else if (header.style == "bolditalic") {
-        named <- ifelse(tags == FALSE, 
-                        paste("\\textbf{\\textit{", named, "}}", sep = ""), 
-                        named)
-        }
-        else if (header.style == "plain") {}
+  }
+  else if (header.style == "italic") {
+    named <- ifelse(tags == FALSE, 
+                    paste("\\textit{", named, "}", sep = ""), 
+                    named)
+  }
+  else if (header.style == "bolditalic") {
+    named <- ifelse(tags == FALSE, 
+                    paste("\\textbf{\\textit{", named, "}}", sep = ""), 
+                    named)
+  }
+  else if (header.style == "plain") {}
   
   # Apply style to factor levels
   if (factor.style == "bold") {
     named <- ifelse((tags == TRUE & tags2 == FALSE), 
                     paste("\\textbf{", named, "}", sep = ""), 
                     named)
-    }
-    else if (factor.style == "italic") {
-      named <- ifelse((tags == TRUE & tags2 == FALSE), 
-                      paste("\\textit{", named, "}", sep = ""), 
-                      named)
-      }
-      else if (factor.style == "bolditalic") {
-        named <- ifelse((tags == TRUE & tags2 == FALSE), 
-                        paste("\\textbf{\\textit{", named, "}}", sep = ""), 
-                        named)
-        }
-        else if (factor.style == "plain") {}
+  }
+  else if (factor.style == "italic") {
+    named <- ifelse((tags == TRUE & tags2 == FALSE), 
+                    paste("\\textit{", named, "}", sep = ""), 
+                    named)
+  }
+  else if (factor.style == "bolditalic") {
+    named <- ifelse((tags == TRUE & tags2 == FALSE), 
+                    paste("\\textbf{\\textit{", named, "}}", sep = ""), 
+                    named)
+  }
+  else if (factor.style == "plain") {}
   
   # Apply style to statistics
   if (stat.style == "bold") {
     named <- ifelse(tags2 == TRUE, 
                     paste("\\textbf{", named, "}", sep = ""), 
                     named)
-    }
-    else if (stat.style == "italic") {
-      named <- ifelse(tags2 == TRUE, 
-                      paste("\\textit{", named, "}", sep = ""), 
-                      named)
-      }
-      else if (stat.style == "bolditalic") {
-        named <- ifelse(tags2 == TRUE, 
-                        paste("\\textbf{\\textit{", named, "}}", sep = ""), 
-                        named)
-        }
-        else if (stat.style == "plain") {}
+  }
+  else if (stat.style == "italic") {
+    named <- ifelse(tags2 == TRUE, 
+                    paste("\\textit{", named, "}", sep = ""), 
+                    named)
+  }
+  else if (stat.style == "bolditalic") {
+    named <- ifelse(tags2 == TRUE, 
+                    paste("\\textbf{\\textit{", named, "}}", sep = ""), 
+                    named)
+  }
+  else if (stat.style == "plain") {}
   #named <- ifelse(tags2==F,
   #                paste("\\textbf{", named, "}", sep=''),
   #                named)
   named <- c(ifelse(tags == F,
-              paste("\\vspace*{0.1cm}", 
-              paste("\\", "\\", sep = ''), 
-              named),
-              paste("\\hskip .5cm", named, sep = ' '))
-             )
+                    paste("\\vspace*{0.1cm}", 
+                          paste("\\", "\\", sep = ''), 
+                          named),
+                    paste("\\hskip .5cm", named, sep = ' '))
+  )
   
   output <- apply(cbind(named, tab[,2:dim(tab)[2]]), 
                   2, 
                   function(x) gsub('%', '\\\\%', x)
-                  )
+  )
   output <- gsub('<', '\\textless ', output)
   output <- gsub('>', '\\textgreater ', output)
   colnames(output) <- colnames
@@ -747,9 +747,9 @@ out.latex <- function(tab,
                                'l', 
                                rep('r', dim(output)[2] - 1)), 
                              collapse='')), 
-               type = "latex", 
-               sanitize.text.function = function(x){x}, 
-               include.rownames = F)
+        type = "latex", 
+        sanitize.text.function = function(x){x}, 
+        include.rownames = F)
 }
 
 ###############
@@ -764,12 +764,12 @@ out.html <- function (tab,
                       header.style = "bold", 
                       factor.style = "bold", 
                       stat.style   = "plain",
-                      caption, 
-                      footer, 
-                      tspanner, 
-                      n.tspanner, 
-                      cgroup, 
-                      n.cgroup, 
+                      #caption, 
+                      #footer, 
+                      #tspanner, 
+                      #n.tspanner, 
+                      #cgroup, 
+                      #n.cgroup, 
                       col.columns = "none", 
                       nowrap      = TRUE,
                       vspace      = TRUE) {
@@ -800,54 +800,54 @@ out.html <- function (tab,
     named <- ifelse(tags == FALSE, 
                     paste("<b>", named, "</b>", sep = ""), 
                     named)
-    }
-    else if (header.style == "italic") {
-      named <- ifelse(tags == FALSE, 
-                      paste("<i>", named, "</i>", sep = ""), 
-                      named)
-      }
-      else if (header.style == "bolditalic") {
-        named <- ifelse(tags == FALSE, 
-                        paste("<b><i>", named, "</i></b>", sep = ""), 
-                        named)
-        }
-        else if (header.style == "plain") {}
+  }
+  else if (header.style == "italic") {
+    named <- ifelse(tags == FALSE, 
+                    paste("<i>", named, "</i>", sep = ""), 
+                    named)
+  }
+  else if (header.style == "bolditalic") {
+    named <- ifelse(tags == FALSE, 
+                    paste("<b><i>", named, "</i></b>", sep = ""), 
+                    named)
+  }
+  else if (header.style == "plain") {}
   
   # Apply style to factor levels
   if (factor.style == "bold") {
     named <- ifelse((tags == TRUE & tags2 == FALSE), 
-                     paste("<b>", named, "</b>", sep = ""), 
-                     named)
-    }
-    else if (factor.style == "italic") {
-      named <- ifelse((tags == TRUE & tags2 == FALSE), 
-                       paste("<i>", named, "</i>", sep = ""), 
-                       named)
-      }
-      else if (factor.style == "bolditalic") {
-        named <- ifelse((tags == TRUE & tags2 == FALSE), 
-                         paste("<b><i>", named, "</i></b>", sep = ""), 
-                         named)
-        }
-        else if (factor.style == "plain") {}
+                    paste("<b>", named, "</b>", sep = ""), 
+                    named)
+  }
+  else if (factor.style == "italic") {
+    named <- ifelse((tags == TRUE & tags2 == FALSE), 
+                    paste("<i>", named, "</i>", sep = ""), 
+                    named)
+  }
+  else if (factor.style == "bolditalic") {
+    named <- ifelse((tags == TRUE & tags2 == FALSE), 
+                    paste("<b><i>", named, "</i></b>", sep = ""), 
+                    named)
+  }
+  else if (factor.style == "plain") {}
   
   # Apply style to statistics
   if (stat.style == "bold") {
     named <- ifelse(tags2 == TRUE, 
                     paste("<b>", named, "</b>", sep = ""), 
                     named)
-    }
-    else if (stat.style == "italic") {
-      named <- ifelse(tags2 == TRUE, 
-                      paste("<i>", named, "</i>", sep = ""), 
-                      named)
-      }
-      else if (stat.style == "bolditalic") {
-        named <- ifelse(tags2 == TRUE, 
-                        paste("<b><i>", named, "</i></b>", sep = ""), 
-                        named)
-        }
-        else if (stat.style == "plain") {}
+  }
+  else if (stat.style == "italic") {
+    named <- ifelse(tags2 == TRUE, 
+                    paste("<i>", named, "</i>", sep = ""), 
+                    named)
+  }
+  else if (stat.style == "bolditalic") {
+    named <- ifelse(tags2 == TRUE, 
+                    paste("<b><i>", named, "</i></b>", sep = ""), 
+                    named)
+  }
+  else if (stat.style == "plain") {}
   
   output <- cbind(named, as.vector(tab[, 2:dim(tab)[2]]))
   
@@ -860,12 +860,12 @@ out.html <- function (tab,
                      header      = colnames, 
                      align       = c("l", rep("r", ncol(output) - 1)), 
                      css.cell    = "padding-left: .2em; padding-right: 2em;",
-                     caption     = caption,
-                     tfoot       = footer,
-                     tspanner    = tspanner,
-                     n.tspanner  = n.tspanner,
-                     cgroup      = cgroup,
-                     n.cgroup    = n.cgroup,
+                     #caption     = caption,
+                     #tfoot       = footer,
+                     #tspanner    = tspanner,
+                     #n.tspanner  = n.tspanner,
+                     #cgroup      = cgroup,
+                     #n.cgroup    = n.cgroup,
                      col.columns = col.columns))
   }
   
@@ -875,10 +875,10 @@ out.html <- function (tab,
     # Get row lengths for each variable group in the table
     if (vspace == FALSE) {
       v <- (rle(tags)$length)[c(FALSE, TRUE)] + 1
-      }
-      else if (vspace == TRUE) {
-        v <- (rle(tags)$length)[c(FALSE, TRUE)] + 1
-        }
+    }
+    else if (vspace == TRUE) {
+      v <- (rle(tags)$length)[c(FALSE, TRUE)] + 1
+    }
     
     # Specify colors for striping
     color <- c('#FFFFFF', stripe.col)
@@ -892,12 +892,12 @@ out.html <- function (tab,
                                           use.names=FALSE),
                      align       = c("l", rep("r", ncol(output) - 1)), 
                      css.cell    = "padding-left: .2em; padding-right: 2em;",
-                     caption     = caption,
-                     tfoot       = footer,
-                     tspanner    = tspanner,
-                     n.tspanner  = n.tspanner,
-                     cgroup      = cgroup,
-                     n.cgroup    = n.cgroup,
+                     #caption     = caption,
+                     #tfoot       = footer,
+                     #tspanner    = tspanner,
+                     #n.tspanner  = n.tspanner,
+                     #cgroup      = cgroup,
+                     #n.cgroup    = n.cgroup,
                      col.columns = col.columns))    
   }
   
@@ -925,7 +925,7 @@ out.html <- function (tab,
 out.plain <- function(tab, colnames = NULL) {
   output <- cbind(format(as.vector(tab[, 1]), justify = 'left'), 
                   data.frame(tab[, 2:dim(tab)[2]])
-                  )
+  )
   colnames(output) = colnames
   return(print(output, row.names = FALSE))
 }
@@ -939,8 +939,8 @@ make.table <- function(dat,
                        cat.varlist  = NULL,
                        cat.header   = names(dat[, cat.varlist]),
                        cat.rownames = lapply(lapply(
-                                        dat[, cat.varlist], factor), 
-                                        levels),
+                         dat[, cat.varlist], factor), 
+                         levels),
                        cat.ptype    = "None",
                        
                        # Continuous variable options
@@ -968,12 +968,12 @@ make.table <- function(dat,
                        nowrap       = TRUE,
                        
                        # HTML options passed directly to htmlTable
-                       caption,
-                       footer,
-                       tspanner,
-                       n.tspanner,
-                       cgroup,
-                       n.cgroup,
+                       #caption,
+                       #footer,
+                       #tspanner,
+                       #n.tspanner,
+                       #cgroup,
+                       #n.cgroup,
                        col.columns  = "none") {
   
   #----------#
@@ -1064,7 +1064,7 @@ make.table <- function(dat,
                pos = dat, 
                simplify = FALSE, 
                USE.NAMES = TRUE))))
-    }
+  }
   
   #----------------------#
   # Removed observations #
@@ -1077,8 +1077,8 @@ make.table <- function(dat,
                          "observations removed due to missing values in 
                          stratifying variable(s)", 
                          sep = ' ')
-    }
-    else {footer.miss <- paste('')}
+  }
+  else {footer.miss <- paste('')}
   
   #------------------#
   # Categorical only #
@@ -1107,14 +1107,14 @@ make.table <- function(dat,
                      (c(cats))[order(
                        match(names(c(cats)), names(dat))
                      )])
-      }
+    }
     # Alphabetically
-      else if (varorder == "abc") {
-        tab <- do.call(rbind, 
-                       (c(cats))[order(
-                         match(names(c(cats)), sort(names(dat)))
-                       )])
-        }
+    else if (varorder == "abc") {
+      tab <- do.call(rbind, 
+                     (c(cats))[order(
+                       match(names(c(cats)), sort(names(dat)))
+                     )])
+    }
     
     # Remove p-value column if no p-values are calculated
     if (all(cat.ptype == "None")) { 
@@ -1153,14 +1153,14 @@ make.table <- function(dat,
                      (c(conts))[order(
                        match(names(c(conts)), names(dat))
                      )])
-      }
+    }
     # Alphabetically
-      else if (varorder == "abc") {
-        tab <- do.call(rbind, 
-                      (c(conts))[order(
-                         match(names(c(conts)), sort(names(dat)))
-                       )])
-        }
+    else if (varorder == "abc") {
+      tab <- do.call(rbind, 
+                     (c(conts))[order(
+                       match(names(c(conts)), sort(names(dat)))
+                     )])
+    }
     
     # Remove p-value column if none are calculated
     if (all(cont.ptype == "None")) { 
@@ -1217,14 +1217,14 @@ make.table <- function(dat,
                      (c(cats, conts))[order(
                        match(names(c(cats, conts)), names(dat))
                      )])
-      }
+    }
     # Alphabetically
-      else if (varorder == "abc") {
-        tab <- do.call(rbind, 
-                      (c(cats, conts))[order(
-                        match(names(c(cats, conts)), sort(names(dat)))
-                      )])
-        }
+    else if (varorder == "abc") {
+      tab <- do.call(rbind, 
+                     (c(cats, conts))[order(
+                       match(names(c(cats, conts)), sort(names(dat)))
+                     )])
+    }
     
     # Remove p-value column if no p-values are calculated
     if (all(cat.ptype == "None" & all(cont.ptype == "None"))) { 
@@ -1240,41 +1240,41 @@ make.table <- function(dat,
   # Define column names
   if (!is.null(colnames)) {
     colnames <- colnames
-    }
-    else if (is.null(colnames)) {
-      colnames <- colnames(tab)
-      }
+  }
+  else if (is.null(colnames)) {
+    colnames <- colnames(tab)
+  }
   
   # Define output type
   if (output == 'plain') {
     out.plain(tab, 
               colnames = colnames)
-    }
-    else if (output == 'html') {
-      out.html(tab, 
-               colnames     = colnames, 
-               stripe       = stripe, 
-               stripe.col   = stripe.col,
-               header.style = header.style, 
-               factor.style = factor.style,
-               stat.style   = stat.style, 
-               caption,
-               footer,
-               tspanner,
-               n.tspanner,
-               cgroup,
-               n.cgroup,
-               col.columns  = col.columns,
-               nowrap       = nowrap)
-        }
-        else if (output == 'latex') {
-          out.latex(tab, 
-                    colnames     = colnames, 
-                    header.style = header.style, 
-                    factor.style = factor.style, 
-                    stat.style   = stat.style)
-          } 
-        }
+  }
+  else if (output == 'html') {
+    out.html(tab, 
+             colnames     = colnames, 
+             stripe       = stripe, 
+             stripe.col   = stripe.col,
+             header.style = header.style, 
+             factor.style = factor.style,
+             stat.style   = stat.style, 
+             #caption,
+             #footer,
+             #tspanner,
+             #n.tspanner,
+             #cgroup,
+             #n.cgroup,
+             col.columns  = col.columns,
+             nowrap       = nowrap)
+  }
+  else if (output == 'latex') {
+    out.latex(tab, 
+              colnames     = colnames, 
+              header.style = header.style, 
+              factor.style = factor.style, 
+              stat.style   = stat.style)
+  } 
+}
 
 ################################
 # MINIMAL INPUT TABLE FUNCTION #
@@ -1303,13 +1303,13 @@ quick.table <- function(dat,
   }
   
   # Remove any variables with the same name as a base R function
-#   if ((any(c(names(dat)) %in% ls('package:base'))) == TRUE) {
-#     warning('Variables cannot share the names of any base R functions.')
-#     warning(print(paste('Removed variable(s):', 
-#                         names(dat)[which(c(names(dat)) %in% ls('package:base'))],
-#                         sep=' ')))
-#     dat <- dat[, -which(c(names(dat)) %in% ls('package:base'))]
-#   }
+  #   if ((any(c(names(dat)) %in% ls('package:base'))) == TRUE) {
+  #     warning('Variables cannot share the names of any base R functions.')
+  #     warning(print(paste('Removed variable(s):', 
+  #                         names(dat)[which(c(names(dat)) %in% ls('package:base'))],
+  #                         sep=' ')))
+  #     dat <- dat[, -which(c(names(dat)) %in% ls('package:base'))]
+  #   }
   
   #-------------------------------#
   # Classify continuous variables #
@@ -1359,7 +1359,7 @@ quick.table <- function(dat,
              output       = output,
              stripe       = stripe,
              stripe.col   = stripe.col)   
-            }
+}
 
 #######################
 # STATISTICAL TESTING #
@@ -1376,16 +1376,16 @@ stat.col <- function(var,
   # One-sample t-test, mean = 0
   if (ptype == 't.oneway') {
     p <- t.test(var, mu = 0)$p.value
-    }
+  }
   # One-sample median test, median = 0
-    else if (ptype == 'wilcox.oneway') {
-      p <- wilcox.test(var, mu = 0)$p.value
-      }
+  else if (ptype == 'wilcox.oneway') {
+    p <- wilcox.test(var, mu = 0)$p.value
+  }
   # Binomial test, proportion = 0.5
-      else if (ptype == 'prop.oneway') {
-        p <- prop.test(sum(var, na.rm = TRUE), 
-                       sum(!is.na(var)), p = 0.5)$p.value
-        }
+  else if (ptype == 'prop.oneway') {
+    p <- prop.test(sum(var, na.rm = TRUE), 
+                   sum(!is.na(var)), p = 0.5)$p.value
+  }
   
   #--------------------#
   # Independent groups #
@@ -1393,29 +1393,29 @@ stat.col <- function(var,
   # Chi-square test
   else if (ptype == 'chisq') {
     p <- chisq.test(var, strat)$p.value
-    }
+  }
   # Fisher's exact test
-    else if (ptype == 'fisher') {
-      p <- fisher.test(var, strat)$p.value
-      }
+  else if (ptype == 'fisher') {
+    p <- fisher.test(var, strat)$p.value
+  }
   # t-test
-      else if (ptype == 'ttest') {
-        p <- t.test(var[strat == levels(as.factor(strat))[1]], 
-                    var[strat == levels(as.factor(strat))[2]])$p.value
-        }
+  else if (ptype == 'ttest') {
+    p <- t.test(var[strat == levels(as.factor(strat))[1]], 
+                var[strat == levels(as.factor(strat))[2]])$p.value
+  }
   # One-way ANOVA
-        else if (ptype == 'anova') {
-          p <- summary(aov(var ~ strat))[[1]][["Pr(>F)"]][[1]]
-          }
+  else if (ptype == 'anova') {
+    p <- summary(aov(var ~ strat))[[1]][["Pr(>F)"]][[1]]
+  }
   # Kruskal-Wallis
-          else if (ptype == 'kruskal') {
-            p <- kruskal.test(var, strat)$p.value
-            }
+  else if (ptype == 'kruskal') {
+    p <- kruskal.test(var, strat)$p.value
+  }
   # Wilcoxon rank-sum test
-            else if (ptype == 'wilcox') {
-              p <- wilcox.test(var[strat == levels(as.factor(strat))[1]], 
-                               var[strat == levels(as.factor(strat))[2]])$p.value
-              }
+  else if (ptype == 'wilcox') {
+    p <- wilcox.test(var[strat == levels(as.factor(strat))[1]], 
+                     var[strat == levels(as.factor(strat))[2]])$p.value
+  }
   
   #------------------#
   # Dependent groups #
@@ -1425,17 +1425,17 @@ stat.col <- function(var,
     p <- t.test(var[strat == levels(as.factor(strat))[1]], 
                 var[strat == levels(as.factor(strat))[2]],
                 paired = TRUE)$p.value
-    }
+  }
   # Wilcoxon signed-rank test
-    else if (ptype == 'wilcox.pair') {
-      p <- wilcox.test(var[strat == levels(as.factor(strat))[1]], 
-                      var[strat == levels(as.factor(strat))[2]],
-                      paired = TRUE)$p.value
-      }
+  else if (ptype == 'wilcox.pair') {
+    p <- wilcox.test(var[strat == levels(as.factor(strat))[1]], 
+                     var[strat == levels(as.factor(strat))[2]],
+                     paired = TRUE)$p.value
+  }
   # McNemar's test
-      else if (ptype == 'mcnemar') {
-        p <- mcnemar.test(var, strat)$p.value
-        }
+  else if (ptype == 'mcnemar') {
+    p <- mcnemar.test(var, strat)$p.value
+  }
   
   #------------#
   # No p-value #
@@ -1443,7 +1443,7 @@ stat.col <- function(var,
   # Print a placeholder dash if no p-value is calculated
   else if (ptype == "None") {
     p <- "-"
-    }
+  }
   
   #------------#
   # Formatting #
@@ -1451,74 +1451,74 @@ stat.col <- function(var,
   # Format p-values for consistency across output platforms
   if (p >= 0.001 & p <= 0.999) {
     p <- format(round(p, 3), nsmall = 3)
-    }
-    else if (p == "-") {
-      p <- "-"
-      }
-      else if (p < 0.001 & output %in% c("plain", "latex")) {
-        p <- "<0.001"
-        }
-        else if (p < 0.001 & output == "html") {
-          p <- "&lt;0.001"
-          }
-          else if (p > 0.999 & output %in% c("plain", "latex")) { 
-            p <- ">0.999"
-            }
-            else if (p > 0.999 & output == "html") {
-              p <- "&gt;0.999"
-              }
+  }
+  else if (p == "-") {
+    p <- "-"
+  }
+  else if (p < 0.001 & output %in% c("plain", "latex")) {
+    p <- "<0.001"
+  }
+  else if (p < 0.001 & output == "html") {
+    p <- "&lt;0.001"
+  }
+  else if (p > 0.999 & output %in% c("plain", "latex")) { 
+    p <- ">0.999"
+  }
+  else if (p > 0.999 & output == "html") {
+    p <- "&gt;0.999"
+  }
   
   
   # Print name of test or statistic if requested
   if (pname == TRUE) {
     if (ptype == 't.oneway') {
       p.col <- c(p, '1-sample t-test')
+    }
+    else if (ptype == 'wilcox.oneway') {
+      p.col <- c(p, '1-sample median')
+    }
+    else if (ptype == 'prop.oneway') {
+      p.col <- c(p, 'Binomial test')
+    }
+    else if (ptype == 'chisq') {
+      p.col <- c(p, 'Chi-square')
+    }
+    else if (ptype == 'fisher') {
+      p.col <- c(p, 'Fisher exact')
+    }
+    else if (ptype == 'ttest') {
+      p.col <- c(p, 't-test')
+    }
+    else if (ptype == 'anova') {
+      p.col <- c(p, '1-way ANOVA')
+    }
+    else if (ptype == 'kruskal') {
+      p.col <- c(p, 'Kruskal-Wallis')
+    }
+    else if (ptype == 'wilcox') {
+      p.col <- c(p, 'Wilcoxon rank-sum')
+    }
+    else if (ptype == 'ttest.pair') {
+      p.col <- c(p, 'Paired t-test')
+    }
+    else if (ptype == 'wilcox.pair') {
+      p.col <- c(p, 'Wilcoxon signed-rank')
+    }
+    else if (ptype == 'mcnemar') {
+      p.col <- c(p, 'McNemar')
+    }
+    else if (ptype=="None") {
+      if (output == "plain") {
+        p.col <- c(p, "-")
       }
-      else if (ptype == 'wilcox.oneway') {
-        p.col <- c(p, '1-sample median')
-        }
-        else if (ptype == 'prop.oneway') {
-          p.col <- c(p, 'Binomial test')
-          }
-          else if (ptype == 'chisq') {
-            p.col <- c(p, 'Chi-square')
-            }
-            else if (ptype == 'fisher') {
-              p.col <- c(p, 'Fisher exact')
-              }
-              else if (ptype == 'ttest') {
-                p.col <- c(p, 't-test')
-                }
-                else if (ptype == 'anova') {
-                  p.col <- c(p, '1-way ANOVA')
-                  }
-                  else if (ptype == 'kruskal') {
-                    p.col <- c(p, 'Kruskal-Wallis')
-                    }
-                    else if (ptype == 'wilcox') {
-                      p.col <- c(p, 'Wilcoxon rank-sum')
-                      }
-                      else if (ptype == 'ttest.pair') {
-                        p.col <- c(p, 'Paired t-test')
-                        }
-                        else if (ptype == 'wilcox.pair') {
-                          p.col <- c(p, 'Wilcoxon signed-rank')
-                          }
-                          else if (ptype == 'mcnemar') {
-                            p.col <- c(p, 'McNemar')
-                            }
-                            else if (ptype=="None") {
-                              if (output == "plain") {
-                                p.col <- c(p, "-")
-                              }
-                              else if (output == "html") {
-                                p.col <- c(p, "&nbsp;")
-                              }
-                              else if (output == "latex") {
-                                p.col <- c(p, "~")
-                              }
-                            }
-                          }
-    else {p.col <- p}
+      else if (output == "html") {
+        p.col <- c(p, "&nbsp;")
+      }
+      else if (output == "latex") {
+        p.col <- c(p, "~")
+      }
+    }
+  }
+  else {p.col <- p}
   return(p.col)
 }  
