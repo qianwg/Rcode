@@ -22,7 +22,7 @@ forest_cox <- function(cox, widths = c(0.10, 0.07, 0.05, 0.04, 0.54, 0.03, 0.17)
     ungroup %>%
     mutate(term = paste0(term_label, replace(level, is.na(level), "")),
            y = n():1) %>%
-    left_join(tidy(cox), by = "term")
+    left_join(tidy(cox, conf.int = TRUE), by = "term")
   
   rel_x <- cumsum(c(0, widths / sum(widths)))
   panes_x <- numeric(length(rel_x))
@@ -39,7 +39,7 @@ forest_cox <- function(cox, widths = c(0.10, 0.07, 0.05, 0.04, 0.54, 0.03, 0.17)
            level_x = panes_x[2],
            n_x = panes_x[3],
            conf_int = ifelse(is.na(level_no) | level_no > 1,
-                             sprintf("%0.2f (%0.2f-%0.2f)", exp(estimate), exp(conf.low), exp(conf.high)),
+                             sprintf("%0.3f (%0.3f-%0.3f)", exp(estimate), exp(conf.low), exp(conf.high)),
                              "Reference"),
            p = ifelse(is.na(level_no) | level_no > 1,
                       sprintf("%0.3f", p.value),
@@ -130,13 +130,13 @@ forest_cox <- function(cox, widths = c(0.10, 0.07, 0.05, 0.04, 0.54, 0.03, 0.17)
 }
 library(survival)
 
-#pretty_lung <- lung %>%
+# pretty_lung <- lung %>%
 #  transmute(time,
 #            status,
 #            Age = age,
 #            Sex = factor(sex, labels = c("Male", "Female")),
 #            ECOG = factor(lung$ph.ecog),
 #            `Meal Cal` = meal.cal)
-#lung_cox <- coxph(Surv(time, status) ~ ., pretty_lung)
-
-
+# lung_cox <- coxph(Surv(time, status) ~ ., pretty_lung)
+# 
+# forest_cox(lung_cox)
